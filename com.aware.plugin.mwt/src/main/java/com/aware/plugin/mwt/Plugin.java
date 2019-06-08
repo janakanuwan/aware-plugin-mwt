@@ -21,7 +21,7 @@ public class Plugin extends Aware_Plugin {
         //This allows plugin data to be synced on demand from broadcast Aware#ACTION_AWARE_SYNC_DATA
         AUTHORITY = Provider.getAuthority(this);
 
-        TAG = "AWARE::" + getResources().getString(R.string.app_name);
+        TAG = "AWARE::MWT";
 
         /**
          * Plugins share their current status, i.e., context using this method.
@@ -32,6 +32,7 @@ public class Plugin extends Aware_Plugin {
             @Override
             public void onContext() {
                 //Broadcast your context here
+                Log.i(TAG, "[MWT] context");
             }
         };
 
@@ -66,7 +67,7 @@ public class Plugin extends Aware_Plugin {
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
 
             //Initialize our plugin's settings
-            Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
+            Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, true);
 
             /**
              * Example of how to enable accelerometer sensing and how to access the data in real-time for your app.
@@ -76,6 +77,7 @@ public class Plugin extends Aware_Plugin {
             Accelerometer.setSensorObserver(new Accelerometer.AWARESensorObserver() {
                 @Override
                 public void onAccelerometerChanged(ContentValues contentValues) {
+                    Log.i(TAG, "[MWT] Accelerometer");
                     sendBroadcast(new Intent("ACCELEROMETER_DATA").putExtra("data", contentValues));
                 }
             });
@@ -125,6 +127,9 @@ public class Plugin extends Aware_Plugin {
     public void onDestroy() {
         super.onDestroy();
 
+        Aware.stopAccelerometer(this);
+        Aware.stopScreen(this);
+
         ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);
         ContentResolver.removePeriodicSync(
                 Aware.getAWAREAccount(this),
@@ -132,6 +137,6 @@ public class Plugin extends Aware_Plugin {
                 Bundle.EMPTY
         );
 
-        Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, false);
+        Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, false);
     }
 }

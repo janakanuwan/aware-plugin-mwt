@@ -26,7 +26,7 @@
             android:name="com.aware.plugin.mwt.Provider"
             android:authorities="${applicationId}.provider.mwt"
             android:exported="true"
-            android:label="@string/plugin_template"
+            android:label="@string/plugin_mwt"
             android:readPermission="com.aware.READ_CONTEXT_DATA"
             android:writePermission="com.aware.WRITE_CONTEXT_DATA" />
 

@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">AWARE: Plugin MWT</string>
-    <string name="plugin_template">Plugin: MWT</string>
+    <string name="plugin_mwt">Plugin: MWT</string>
 </resources>
