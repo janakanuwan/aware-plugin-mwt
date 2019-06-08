@@ -1,0 +1,2 @@
+include ':com.aware.plugin.mwt'
+//, ':com.aware.plugin.mwt.lib'
