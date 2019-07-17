@@ -31,11 +31,10 @@ android {
 }
 
 repositories {
-    maven { url 'https://jitpack.io' } //this allows library generation directly from GitHub source-code
+    maven { url 'https://jitpack.io' }
+    //this allows library generation directly from GitHub source-code
 }
 
 dependencies {
-//    api "com.github.denzilferreira:aware-client:$aware_libs"
-    implementation "com.android.support:design:$support_libs"
-    api project(":aware-core")
+    api "com.github.denzilferreira:aware-client:$aware_libs"
 }
