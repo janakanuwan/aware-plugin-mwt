@@ -27,8 +27,9 @@ import java.util.Calendar;
 
 public class Plugin extends Aware_Plugin {
 
-    public static final String ACTION_AWARE_MWT_DETECT = "ACTION_AWARE_MWT_DETECT";
     public static final String ACTION_AWARE_PLUGIN_DEVICE_MWT = "ACTION_AWARE_PLUGIN_DEVICE_MWT";
+    public static final String ACTION_AWARE_MWT_DETECT = "ACTION_AWARE_MWT_DETECT";
+    public static final String ACTION_AWARE_MWT_TRIGGER = "ACTION_AWARE_MWT_TRIGGER";
 
     public static final int ACTIVITY_CODE_IN_VEHICLE = 0;
     public static final int ACTIVITY_CODE_ON_BICYCLE = 1;
@@ -71,12 +72,14 @@ public class Plugin extends Aware_Plugin {
         intentFilter.addAction(ACTION_AWARE_CALL_MADE);
         intentFilter.addAction(ACTION_AWARE_APPLICATIONS_FOREGROUND);
         intentFilter.addAction(ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION);
+        // trigger for MWT
+        intentFilter.addAction(ACTION_AWARE_MWT_TRIGGER);
 
         eventListener = new MwtListener(this);
         registerReceiver(eventListener, intentFilter);
     }
 
-    private void scheduleMWTTrigger(long millis) {
+    private void scheduleMWTTrigger(final long millis) {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
@@ -84,7 +87,7 @@ public class Plugin extends Aware_Plugin {
                 calendar.setTimeInMillis(now);
                 Log.d(TAG, "Now " + calendar);
                 int i = calendar.get(Calendar.HOUR_OF_DAY);
-                if (now - lastEsmMillis > THIRTY_MINUTES_IN_MILLIS && i >= 9 && i <= 18) {
+                if (millis <= 0 || now - lastEsmMillis > THIRTY_MINUTES_IN_MILLIS && i >= 9 && i <= 18) {
                     Log.i(TAG, "[MWT ESM] Start");
                     Plugin.lastEsmMillis = now;
                     CONTEXT_PRODUCER.onContext();
@@ -246,11 +249,17 @@ public class Plugin extends Aware_Plugin {
             }
             if (expectedApp && System.currentTimeMillis() - lastAppChangeMillis > 60000L) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] App");
-                this.plugin.scheduleMWTTrigger(10000L);
+                plugin.scheduleMWTTrigger(10000L);
             }
+
             if (ACTION_AWARE_CALL_ACCEPTED.equals(action) || ACTION_AWARE_CALL_MADE.equals(action)) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
-                this.plugin.scheduleMWTTrigger(5000L);
+                plugin.scheduleMWTTrigger(5000L);
+            }
+
+            if (ACTION_AWARE_MWT_TRIGGER.equals(action)) {
+                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Manual");
+                plugin.scheduleMWTTrigger(0);
             }
         }
     }
