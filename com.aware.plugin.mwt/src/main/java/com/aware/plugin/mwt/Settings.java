@@ -30,8 +30,8 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         super.onResume();
 
         status = (CheckBoxPreference) findPreference(STATUS_PLUGIN_MWT);
-        if( Aware.getSetting(this, STATUS_PLUGIN_MWT).length() == 0 ) {
-            Aware.setSetting( this, STATUS_PLUGIN_MWT, true ); //by default, the setting is true on install
+        if (Aware.getSetting(this, STATUS_PLUGIN_MWT).length() == 0) {
+            Aware.setSetting(this, STATUS_PLUGIN_MWT, true); //by default, the setting is true on install
         }
         status.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_MWT).equals("true"));
     }
@@ -39,7 +39,7 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Preference setting = findPreference(key);
-        if( setting.getKey().equals(STATUS_PLUGIN_MWT) ) {
+        if (setting.getKey().equals(STATUS_PLUGIN_MWT)) {
             Aware.setSetting(this, key, sharedPreferences.getBoolean(key, false));
             status.setChecked(sharedPreferences.getBoolean(key, false));
         }

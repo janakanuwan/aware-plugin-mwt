@@ -35,7 +35,7 @@ public class Provider extends ContentProvider {
 
     //Put tables names in this array so AWARE knows what you have on the database
     public static final String[] DATABASE_TABLES = {
-        DB_TBL_TEMPLATE
+            DB_TBL_TEMPLATE
     };
 
     //These are columns that we need to sync data, don't change this!
@@ -62,12 +62,12 @@ public class Provider extends ContentProvider {
 
     //Define each database table fields
     private static final String DB_TBL_TEMPLATE_FIELDS =
-        MWT_Data._ID + " integer primary key autoincrement," +
-        MWT_Data.TIMESTAMP + " real default 0," +
-        MWT_Data.DEVICE_ID + " text default ''," +
-        MWT_Data.NAME + " text default ''," +
-        MWT_Data.BIG_NUMBER + " real default 0," +
-        MWT_Data.PICTURE + " blob default null";
+            MWT_Data._ID + " integer primary key autoincrement," +
+                    MWT_Data.TIMESTAMP + " real default 0," +
+                    MWT_Data.DEVICE_ID + " text default ''," +
+                    MWT_Data.NAME + " text default ''," +
+                    MWT_Data.BIG_NUMBER + " real default 0," +
+                    MWT_Data.PICTURE + " blob default null";
 
     /**
      * Share the fields with AWARE so we can replicate the table schema on the server
@@ -80,6 +80,7 @@ public class Provider extends ContentProvider {
     private UriMatcher sUriMatcher;
     private DatabaseHelper dbHelper;
     private static SQLiteDatabase database;
+
     private void initialiseDatabase() {
         if (dbHelper == null)
             dbHelper = new DatabaseHelper(getContext(), DATABASE_NAME, null, DATABASE_VERSION, DATABASE_TABLES, TABLES_FIELDS);
@@ -93,10 +94,11 @@ public class Provider extends ContentProvider {
 
     /**
      * Returns the provider authority that is dynamic
+     *
      * @return
      */
     public static String getAuthority(Context context) {
-        AUTHORITY = context.getPackageName() + ".provider.xxx";
+        AUTHORITY = context.getPackageName() + ".provider.mwt";
         return AUTHORITY;
     }
 

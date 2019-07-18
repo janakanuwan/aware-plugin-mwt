@@ -141,6 +141,9 @@ public class Plugin extends Aware_Plugin {
     }
 
 
+    /**
+     * Allow callback to other applications when data is stored in provider
+     */
     private static AWARESensorObserver awareSensor;
 
     public static void setSensorObserver(AWARESensorObserver observer) {
@@ -151,7 +154,6 @@ public class Plugin extends Aware_Plugin {
         return awareSensor;
     }
 
-
     public interface AWARESensorObserver {
         void onDataChanged(ContentValues data);
     }
@@ -159,30 +161,41 @@ public class Plugin extends Aware_Plugin {
     public int onStartCommand(Intent paramIntent, int paramInt1, int paramInt2) {
         super.onStartCommand(paramIntent, paramInt1, paramInt2);
 
-        Log.i(this.TAG, "[MWT] onStartCommand");
         if (PERMISSIONS_OK) {
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
+
+            //Initialize our plugin's settings
             Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, true);
 
-            if ((Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE).length() >= 0 && !Aware.isSyncEnabled(this, Provider.getAuthority(this)) && Aware.isStudy(this) && getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone")) || getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
+            //Enable our plugin's sync-adapter to upload the data to the server if part of a study
+            if (Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE).length() >= 0 && !Aware.isSyncEnabled(this, Provider.getAuthority(this)) && Aware.isStudy(this) && getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
                 ContentResolver.setIsSyncable(Aware.getAWAREAccount(this), Provider.getAuthority(this), 1);
                 ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), true);
                 ContentResolver.addPeriodicSync(
                         Aware.getAWAREAccount(this),
                         Provider.getAuthority(this),
                         Bundle.EMPTY,
-                        Long.parseLong(Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE)) * 60L
+                        Long.parseLong(Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE)) * 60
                 );
             }
         }
+        Log.i(this.TAG, "[MWT] onStartCommand");
+
         return START_STICKY;
     }
 
     public void onDestroy() {
         super.onDestroy();
+
         unregisterEventListener();
+
         ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);
-        ContentResolver.removePeriodicSync(Aware.getAWAREAccount(this), Provider.getAuthority(this), Bundle.EMPTY);
+        ContentResolver.removePeriodicSync(
+                Aware.getAWAREAccount(this),
+                Provider.getAuthority(this),
+                Bundle.EMPTY
+        );
+
         Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, false);
     }
 
