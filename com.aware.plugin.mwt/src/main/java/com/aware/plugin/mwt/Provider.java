@@ -49,7 +49,7 @@ public class Provider extends ContentProvider {
      * Create one of these per database table
      * In this example, we are adding example columns
      */
-    public static final class TableOne_Data implements AWAREColumns {
+    public static final class MWT_Data implements AWAREColumns {
         public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + DB_TBL_TEMPLATE);
         public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.aware.plugin.mwt.provider.table_one"; //modify me
         public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.com.aware.plugin.mwt.provider.table_one"; //modify me
@@ -62,12 +62,12 @@ public class Provider extends ContentProvider {
 
     //Define each database table fields
     private static final String DB_TBL_TEMPLATE_FIELDS =
-        TableOne_Data._ID + " integer primary key autoincrement," +
-        TableOne_Data.TIMESTAMP + " real default 0," +
-        TableOne_Data.DEVICE_ID + " text default ''," +
-        TableOne_Data.NAME + " text default ''," +
-        TableOne_Data.BIG_NUMBER + " real default 0," +
-        TableOne_Data.PICTURE + " blob default null";
+        MWT_Data._ID + " integer primary key autoincrement," +
+        MWT_Data.TIMESTAMP + " real default 0," +
+        MWT_Data.DEVICE_ID + " text default ''," +
+        MWT_Data.NAME + " text default ''," +
+        MWT_Data.BIG_NUMBER + " real default 0," +
+        MWT_Data.PICTURE + " blob default null";
 
     /**
      * Share the fields with AWARE so we can replicate the table schema on the server
@@ -113,12 +113,12 @@ public class Provider extends ContentProvider {
 
         //Create each table hashmap so Android knows how to insert data to the database. Put ALL table fields.
         tableOneHash = new HashMap<>();
-        tableOneHash.put(TableOne_Data._ID, TableOne_Data._ID);
-        tableOneHash.put(TableOne_Data.TIMESTAMP, TableOne_Data.TIMESTAMP);
-        tableOneHash.put(TableOne_Data.DEVICE_ID, TableOne_Data.DEVICE_ID);
-        tableOneHash.put(TableOne_Data.NAME, TableOne_Data.NAME);
-        tableOneHash.put(TableOne_Data.BIG_NUMBER, TableOne_Data.BIG_NUMBER);
-        tableOneHash.put(TableOne_Data.PICTURE, TableOne_Data.PICTURE);
+        tableOneHash.put(MWT_Data._ID, MWT_Data._ID);
+        tableOneHash.put(MWT_Data.TIMESTAMP, MWT_Data.TIMESTAMP);
+        tableOneHash.put(MWT_Data.DEVICE_ID, MWT_Data.DEVICE_ID);
+        tableOneHash.put(MWT_Data.NAME, MWT_Data.NAME);
+        tableOneHash.put(MWT_Data.BIG_NUMBER, MWT_Data.BIG_NUMBER);
+        tableOneHash.put(MWT_Data.PICTURE, MWT_Data.PICTURE);
 
         return true;
     }
@@ -162,11 +162,11 @@ public class Provider extends ContentProvider {
 
             //Add each table DIR case
             case TABLE_ONE_DIR:
-                long _id = database.insert(DATABASE_TABLES[0], TableOne_Data.DEVICE_ID, values);
+                long _id = database.insert(DATABASE_TABLES[0], MWT_Data.DEVICE_ID, values);
                 database.setTransactionSuccessful();
                 database.endTransaction();
                 if (_id > 0) {
-                    Uri dataUri = ContentUris.withAppendedId(TableOne_Data.CONTENT_URI, _id);
+                    Uri dataUri = ContentUris.withAppendedId(MWT_Data.CONTENT_URI, _id);
                     getContext().getContentResolver().notifyChange(dataUri, null);
                     return dataUri;
                 }
@@ -215,9 +215,9 @@ public class Provider extends ContentProvider {
 
             //Add each table indexes DIR and ITEM
             case TABLE_ONE_DIR:
-                return TableOne_Data.CONTENT_TYPE;
+                return MWT_Data.CONTENT_TYPE;
             case TABLE_ONE_ITEM:
-                return TableOne_Data.CONTENT_ITEM_TYPE;
+                return MWT_Data.CONTENT_ITEM_TYPE;
 
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);

@@ -26,7 +26,7 @@ public class MWT_Sync extends Service {
                 sSyncAdapter.init(
                         Provider.DATABASE_TABLES, Provider.TABLES_FIELDS,
                         new Uri[]{
-                                Provider.TableOne_Data.CONTENT_URI
+                                Provider.MWT_Data.CONTENT_URI
                         }
                 );
             }

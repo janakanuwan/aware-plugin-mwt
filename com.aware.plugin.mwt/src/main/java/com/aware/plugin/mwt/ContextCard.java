@@ -38,7 +38,7 @@ public class ContextCard implements IContextCard {
     public class AccelerometerObserver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equalsIgnoreCase("ACCELEROMETER_DATA")) {
+            if ("ACCELEROMETER_DATA".equalsIgnoreCase(intent.getAction())) {
                 ContentValues data = intent.getParcelableExtra("data");
                 hello.setText(data.toString());
             }
