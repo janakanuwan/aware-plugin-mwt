@@ -201,7 +201,7 @@ public class Plugin extends Aware_Plugin {
 
         public void onReceive(Context param1Context, Intent intent) {
             String action = intent.getAction();
-            Log.d(TAG_AWARE_MWT, action);
+            Log.d(TAG_AWARE_MWT, "[ACTION]: " + action);
 
             boolean expectedActivity = false;
 
