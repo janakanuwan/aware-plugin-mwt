@@ -23,7 +23,11 @@ import com.aware.utils.Aware_Plugin;
 
 import org.json.JSONException;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Calendar;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Plugin extends Aware_Plugin {
 
@@ -137,6 +141,7 @@ public class Plugin extends Aware_Plugin {
             }
         };
         registerEventListener();
+        startServerTriggers();
         Log.i(TAG, "[MWT] OnCreate");
     }
 
@@ -187,6 +192,7 @@ public class Plugin extends Aware_Plugin {
     public void onDestroy() {
         super.onDestroy();
 
+        stopServerTrigger();
         unregisterEventListener();
 
         ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);
@@ -199,6 +205,55 @@ public class Plugin extends Aware_Plugin {
         Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, false);
     }
 
+    private static final long SERVER_PING_DELAY_MILLIS = 10 * 1000L;
+    private static final long SERVER_TRIGGER_GAP_MILLIS = 60 * 1000L;
+
+    private Timer timer = null;
+    private static long lastServerTriggerMillis = 0;
+
+    public void startServerTriggers() {
+        stopServerTrigger();
+
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            public void run() {
+                long now = System.currentTimeMillis();
+                if (isServerTriggerAvailable() && now - lastServerTriggerMillis > SERVER_TRIGGER_GAP_MILLIS) {
+                    lastServerTriggerMillis = now;
+
+                    Log.d(Aware.TAG, "[ESM TRIGGER] Server");
+                    Intent createEsm = new Intent(ACTION_AWARE_MWT_TRIGGER);
+                    sendBroadcast(createEsm);
+                }
+            }
+        }, 0, SERVER_PING_DELAY_MILLIS);
+    }
+
+    private static final String SERVER_URL = "http://nuwanjanaka.info/test1/devices";
+
+    private boolean isServerTriggerAvailable() {
+        try {
+            URL url = new URL(SERVER_URL + "/" + Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
+            HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+            httpCon.setRequestMethod("GET");
+            httpCon.setRequestProperty("Content-Type", "application/json");
+
+            int responseCode = httpCon.getResponseCode();
+            String responseMessage = httpCon.getResponseMessage();
+            Log.d(TAG, "Server response: " + responseCode + ", " + responseMessage);
+            return responseCode == HttpURLConnection.HTTP_OK;
+        } catch (Exception e) {
+            Log.e(TAG, "Error:isServerTriggerAvailable", e);
+        }
+        return false;
+    }
+
+    private void stopServerTrigger() {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+    }
 
     private static class MwtListener extends BroadcastReceiver {
         private static final String TAG_AWARE_MWT = "AWARE::MWT";
@@ -275,6 +330,7 @@ public class Plugin extends Aware_Plugin {
                 plugin.scheduleMWTTrigger(0);
             }
         }
+
     }
 
     public static String getActivityName(int paramInt) {
