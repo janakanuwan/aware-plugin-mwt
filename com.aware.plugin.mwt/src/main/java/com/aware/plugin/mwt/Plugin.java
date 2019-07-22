@@ -412,7 +412,7 @@ public class Plugin extends Aware_Plugin {
                 .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
         ESM_Freetext otherLearningActivitiesFreeText = new ESM_Freetext();
         otherLearningActivitiesFreeText
-                .setTitle("Learning activity preference")
+                .setTitle("Learning activity preferences")
                 .setInstructions("Any other desired things you like to learn now? If not why?")
                 .setSubmitButton("Next");
         ESM_Radio roadFamiliarityRadio = new ESM_Radio();
@@ -446,7 +446,7 @@ public class Plugin extends Aware_Plugin {
                 .addFlow("Walking", roadFamiliarityRadio.build())
                 .addFlow("Commuting", roadFamiliarityRadio.build())
                 .addFlow("Waiting", waitingReasonRadio.build())
-                .setTitle("Primary Action")
+                .setTitle("Primary Activity")
                 .setInstructions("What is the MAIN activity you are doing now?")
                 .setSubmitButton("Next");
         ESM_Checkbox secondaryActivityCheckbox = new ESM_Checkbox();
@@ -458,7 +458,7 @@ public class Plugin extends Aware_Plugin {
                 .addCheck("Resting")
                 .addCheck("Mobile Checking")
                 .addCheck("Other")
-                .setTitle("Secondary Action")
+                .setTitle("Secondary Activity")
                 .setInstructions("What other activities you are doing now?")
                 .setSubmitButton("Next");
         ESM_Likert mentalDemandLikert = new ESM_Likert();
@@ -503,7 +503,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Tired")
                 .addRadio("Normal")
                 .addRadio("Other")
-                .setTitle("Physical condition")
+                .setTitle("Physical Condition")
                 .setInstructions("How do you feel physically?")
                 .setSubmitButton("Next");
         ESM_PAM moodGrid = new ESM_PAM();
