@@ -23,6 +23,9 @@ import com.aware.utils.Aware_Plugin;
 
 import org.json.JSONException;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Calendar;
@@ -34,6 +37,8 @@ public class Plugin extends Aware_Plugin {
     public static final String ACTION_AWARE_PLUGIN_DEVICE_MWT = "ACTION_AWARE_PLUGIN_DEVICE_MWT";
     public static final String ACTION_AWARE_MWT_DETECT = "ACTION_AWARE_MWT_DETECT";
     public static final String ACTION_AWARE_MWT_TRIGGER = "ACTION_AWARE_MWT_TRIGGER";
+
+    private static final String ACTION_AWARE_MWT_TRIGGER_CAUSE = "ACTION_AWARE_MWT_TRIGGER_CAUSE";
 
     public static final int ACTIVITY_CODE_IN_VEHICLE = 0;
     public static final int ACTIVITY_CODE_ON_BICYCLE = 1;
@@ -63,7 +68,13 @@ public class Plugin extends Aware_Plugin {
     private static final String EXTRA_DATA = "data";
     private static final String PACKAGE_NAME = "package_name";
 
-    private static final long THIRTY_MINUTES_IN_MILLIS = 1800000L;
+    private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
+
+    private static final String MWT_TRIGGER_SOCIAL_MEDIA = "TRIGGER_SOCIAL_MEDIA";
+    private static final String MWT_TRIGGER_ACTIVITY_CHANGE = "TRIGGER_ACTIVITY_CHANGE";
+    private static final String MWT_TRIGGER_AFTER_CALL = "TRIGGER_AFTER_CALL";
+    private static final String MWT_TRIGGER_MANUAL = "TRIGGER_MANUAL";
+    private static final String MWT_TRIGGER_SERVER = "TRIGGER_SERVER";
 
     public static String activityName = "";
     private static long lastEsmMillis;
@@ -83,28 +94,31 @@ public class Plugin extends Aware_Plugin {
         registerReceiver(eventListener, intentFilter);
     }
 
-    private void scheduleMWTTrigger(final long millis) {
+    private void scheduleMWTTrigger(final long millis, final String trigger) {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTimeInMillis(now);
-                Log.d(TAG, "Now " + calendar);
-                int i = calendar.get(Calendar.HOUR_OF_DAY);
-                if (millis <= 0 || now - lastEsmMillis > THIRTY_MINUTES_IN_MILLIS && i >= 9 && i <= 18) {
-                    Log.i(TAG, "[MWT ESM] Start");
+                if (millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS && isCorrectDuration(now)) {
+                    Log.i(TAG, "[MWT ESM] Start: " + now);
                     Plugin.lastEsmMillis = now;
                     CONTEXT_PRODUCER.onContext();
                     sendBroadcast(new Intent(ACTION_AWARE_MWT_DETECT));
-                    startESM();
+                    startESM(trigger);
                 }
             }
         }, millis);
     }
 
-    private void startESM() {
+    private static boolean isCorrectDuration(long now) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(now);
+        int i = calendar.get(Calendar.HOUR_OF_DAY);
+        return i >= 8 && i <= 20;
+    }
+
+    private void startESM(String trigger) {
         try {
-            ESM.queueESM(this, getQuestionnaire());
+            ESM.queueESM(this, getQuestionnaire(trigger));
         } catch (JSONException jSONException) {
             Log.e(this.TAG, "[MWT_ESM] Error", jSONException);
         }
@@ -222,8 +236,9 @@ public class Plugin extends Aware_Plugin {
                     lastServerTriggerMillis = now;
 
                     Log.d(Aware.TAG, "[ESM TRIGGER] Server");
-                    Intent createEsm = new Intent(ACTION_AWARE_MWT_TRIGGER);
-                    sendBroadcast(createEsm);
+                    Intent esmTriggerIntent = new Intent(ACTION_AWARE_MWT_TRIGGER);
+                    esmTriggerIntent.putExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE, MWT_TRIGGER_SERVER);
+                    sendBroadcast(esmTriggerIntent);
                 }
             }
         }, 0, SERVER_PING_DELAY_MILLIS);
@@ -239,9 +254,23 @@ public class Plugin extends Aware_Plugin {
             httpCon.setRequestProperty("Content-Type", "application/json");
 
             int responseCode = httpCon.getResponseCode();
-            String responseMessage = httpCon.getResponseMessage();
-            Log.d(TAG, "Server response: " + responseCode + ", " + responseMessage);
-            return responseCode == HttpURLConnection.HTTP_OK;
+            StringBuilder response = new StringBuilder();
+            if (responseCode == HttpURLConnection.HTTP_OK) { // success
+                try (
+                        BufferedReader in = new BufferedReader(new InputStreamReader(httpCon.getInputStream()));
+                ) {
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "Error in reading response", e);
+                }
+            }
+            String resBody = response.toString();
+            Log.d(TAG, "Server response: " + responseCode + ", " + resBody);
+            return resBody.length() > 0 && !resBody.equalsIgnoreCase("[]");
+
         } catch (Exception e) {
             Log.e(TAG, "Error:isServerTriggerAvailable", e);
         }
@@ -286,7 +315,7 @@ public class Plugin extends Aware_Plugin {
             }
             if (expectedActivity && System.currentTimeMillis() - lastActivityChangeMillis > 20000L) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Activity:" + Plugin.activityName);
-                plugin.scheduleMWTTrigger(5000L);
+                plugin.scheduleMWTTrigger(5000L, MWT_TRIGGER_ACTIVITY_CHANGE);
             }
 
             boolean expectedApp = false;
@@ -296,19 +325,7 @@ public class Plugin extends Aware_Plugin {
                 Log.d(TAG_AWARE_MWT, "[MWT] App: " + contentValues.toString());
 
                 String currentPackageName = contentValues.getAsString(PACKAGE_NAME);
-                switch (currentPackageName) {
-                    case "com.google.android.talk":
-                    case "com.facebook.katana":
-                    case "com.android.chrome":
-                    case "com.google.android.gm":
-                    case "com.tencent.mm":
-                    case "com.whatsapp":
-                    case "com.google.android.youtube":
-                        expectedApp = true;
-                        break;
-                    default:
-                        expectedApp = false;
-                }
+                expectedApp = isExpectedSocialMediaPackage(currentPackageName);
 
                 if (!packageName.equals(currentPackageName)) {
                     packageName = currentPackageName;
@@ -317,20 +334,39 @@ public class Plugin extends Aware_Plugin {
             }
             if (expectedApp && System.currentTimeMillis() - lastAppChangeMillis > 60000L) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] App");
-                plugin.scheduleMWTTrigger(10000L);
+                plugin.scheduleMWTTrigger(10000L, MWT_TRIGGER_SOCIAL_MEDIA);
             }
 
             if (ACTION_AWARE_CALL_ACCEPTED.equals(action) || ACTION_AWARE_CALL_MADE.equals(action)) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
-                plugin.scheduleMWTTrigger(5000L);
+                plugin.scheduleMWTTrigger(5000L, MWT_TRIGGER_AFTER_CALL);
             }
 
             if (ACTION_AWARE_MWT_TRIGGER.equals(action)) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Manual");
-                plugin.scheduleMWTTrigger(0);
+                String trigger = intent.getStringExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE);
+                if (trigger == null) {
+                    trigger = MWT_TRIGGER_MANUAL;
+                }
+                plugin.scheduleMWTTrigger(0, trigger);
             }
         }
 
+    }
+
+    private static boolean isExpectedSocialMediaPackage(String currentPackageName) {
+        switch (currentPackageName) {
+            case "com.google.android.talk":
+            case "com.facebook.katana":
+            case "com.android.chrome":
+            case "com.google.android.gm":
+            case "com.tencent.mm":
+            case "com.whatsapp":
+            case "com.google.android.youtube":
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static String getActivityName(int paramInt) {
@@ -355,7 +391,7 @@ public class Plugin extends Aware_Plugin {
         }
     }
 
-    private static String getQuestionnaire() throws JSONException {
+    private static String getQuestionnaire(String trigger) throws JSONException {
         ESMFactory eSMFactory = new ESMFactory();
 
         ESM_Likert eSM_Likert = new ESM_Likert();
@@ -366,7 +402,7 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Receptivity to learn")
                 .setInstructions("How do you feel about learning now?")
                 .setSubmitButton("Next")
-                .setTrigger("mwt")
+                .setTrigger(trigger)
                 .setExpirationThreshold(120)
                 .setNotificationTimeout(180);
         ESM_Freetext eSM_Freetext = new ESM_Freetext();

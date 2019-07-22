@@ -38,4 +38,5 @@ repositories {
 dependencies {
     implementation "com.android.support:design:$support_libs"
     api project(":aware-core")
+//    api "com.github.denzilferreira:aware-client:$aware_libs"
 }
