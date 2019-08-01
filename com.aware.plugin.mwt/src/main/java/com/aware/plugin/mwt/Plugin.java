@@ -36,7 +36,6 @@ import java.util.TimerTask;
 public class Plugin extends Aware_Plugin {
 
     public static final String ACTION_AWARE_PLUGIN_DEVICE_MWT = "ACTION_AWARE_PLUGIN_DEVICE_MWT";
-    public static final String ACTION_AWARE_MWT_DETECT = "ACTION_AWARE_MWT_DETECT";
     public static final String ACTION_AWARE_MWT_TRIGGER = "ACTION_AWARE_MWT_TRIGGER";
 
     private static final String ACTION_AWARE_MWT_TRIGGER_CAUSE = "ACTION_AWARE_MWT_TRIGGER_CAUSE";
@@ -86,6 +85,7 @@ public class Plugin extends Aware_Plugin {
 
     public static String activityName = "";
     private static String triggerCause = "";
+    private static String packageName = "";
     private static long lastEsmMillis;
 
     private MwtListener eventListener;
@@ -103,17 +103,15 @@ public class Plugin extends Aware_Plugin {
         registerReceiver(eventListener, intentFilter);
     }
 
-    private void scheduleMWTTrigger(final long millis, final String trigger) {
+    private void scheduleMWTTrigger(final long millis) {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
                 if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow()) {
                     Log.i(TAG, "[MWT ESM] Start: " + now);
-                    Plugin.lastEsmMillis = now;
-                    triggerCause = trigger;
+                    lastEsmMillis = now;
                     CONTEXT_PRODUCER.onContext();
-                    sendBroadcast(new Intent(ACTION_AWARE_MWT_DETECT).putExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE, trigger));
-                    startESM(trigger);
+                    startESM(triggerCause);
                 }
             }
         }, millis);
@@ -150,16 +148,18 @@ public class Plugin extends Aware_Plugin {
                 ContentValues contentValues = new ContentValues();
                 contentValues.put(Provider.MWT_Data.TIMESTAMP, System.currentTimeMillis());
                 contentValues.put(Provider.MWT_Data.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
-                contentValues.put(Provider.MWT_Data.NAME, Plugin.activityName);
-                contentValues.put(Provider.MWT_Data.BIG_NUMBER, 0);
+                contentValues.put(Provider.MWT_Data.ACTIVITY_NAME, Plugin.activityName);
+                contentValues.put(Provider.MWT_Data.TRIGGER_CAUSE, Plugin.triggerCause);
+                contentValues.put(Provider.MWT_Data.PACKAGE_NAME, Plugin.packageName);
                 if (DEBUG) {
                     Log.d(TAG, contentValues.toString());
                 }
 
                 getContentResolver().insert(Provider.MWT_Data.CONTENT_URI, contentValues);
                 Intent intent = new Intent(ACTION_AWARE_PLUGIN_DEVICE_MWT);
-                intent.putExtra(Provider.MWT_Data.NAME, Plugin.activityName);
-                intent.putExtra(Provider.MWT_Data.BIG_NUMBER, 0);
+                intent.putExtra(Provider.MWT_Data.ACTIVITY_NAME, Plugin.activityName);
+                intent.putExtra(Provider.MWT_Data.TRIGGER_CAUSE, Plugin.triggerCause);
+                intent.putExtra(Provider.MWT_Data.PACKAGE_NAME, Plugin.packageName);
                 sendBroadcast(intent);
             }
         };
@@ -301,7 +301,6 @@ public class Plugin extends Aware_Plugin {
         private final Plugin plugin;
 
         private long lastAppChangeMillis = 0L;
-        private String packageName = "";
         private long lastActivityChangeMillis = 0L;
 
         private MwtListener(Plugin plugin) {
@@ -317,17 +316,18 @@ public class Plugin extends Aware_Plugin {
             if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equals(action)) {
                 int activity = intent.getIntExtra("activity", ACTIVITY_CODE_UNKNOWN);
                 int confidence = intent.getIntExtra("confidence", ACTIVITY_CODE_UNKNOWN);
-                String activityName = Plugin.getActivityName(activity);
-                Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + activityName + ", " + confidence);
-                if (!activityName.equals(Plugin.activityName) && confidence > 60) {
+                String newActivityName = Plugin.getActivityName(activity);
+                Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + newActivityName + ", " + confidence);
+                if (!newActivityName.equals(activityName) && confidence > 60) {
                     expectedActivity = activity == ACTIVITY_CODE_IN_VEHICLE || activity == ACTIVITY_CODE_STILL || activity == ACTIVITY_CODE_WALKING;
-                    Plugin.activityName = activityName;
+                    activityName = newActivityName;
                     lastActivityChangeMillis = System.currentTimeMillis();
                 }
             }
             if (expectedActivity && System.currentTimeMillis() - lastActivityChangeMillis > 20000L) {
-                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Activity:" + Plugin.activityName);
-                plugin.scheduleMWTTrigger(5000L, MWT_TRIGGER_ACTIVITY_CHANGE);
+                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Activity:" + activityName);
+                triggerCause = MWT_TRIGGER_ACTIVITY_CHANGE;
+                plugin.scheduleMWTTrigger(5000L);
             }
 
             boolean expectedApp = false;
@@ -346,21 +346,24 @@ public class Plugin extends Aware_Plugin {
             }
             if (expectedApp && System.currentTimeMillis() - lastAppChangeMillis > 60000L) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] App");
-                plugin.scheduleMWTTrigger(10000L, MWT_TRIGGER_SOCIAL_MEDIA);
+                triggerCause = MWT_TRIGGER_SOCIAL_MEDIA;
+                plugin.scheduleMWTTrigger(10000L);
             }
 
             if (ACTION_AWARE_CALL_ACCEPTED.equals(action) || ACTION_AWARE_CALL_MADE.equals(action)) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
-                plugin.scheduleMWTTrigger(5000L, MWT_TRIGGER_AFTER_CALL);
+                triggerCause = MWT_TRIGGER_AFTER_CALL;
+                plugin.scheduleMWTTrigger(5000L);
             }
 
             if (ACTION_AWARE_MWT_TRIGGER.equals(action)) {
-                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Manual");
                 String trigger = intent.getStringExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE);
                 if (trigger == null) {
                     trigger = MWT_TRIGGER_MANUAL;
                 }
-                plugin.scheduleMWTTrigger(0, trigger);
+                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] " + trigger);
+                triggerCause = trigger;
+                plugin.scheduleMWTTrigger(0);
             }
         }
 

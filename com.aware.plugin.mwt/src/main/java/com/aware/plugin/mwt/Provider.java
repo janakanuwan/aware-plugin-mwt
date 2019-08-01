@@ -23,7 +23,7 @@ public class Provider extends ContentProvider {
 
     public static String AUTHORITY = "com.aware.plugin.mwt.provider.mwt"; //change to package.provider.your_plugin_name
 
-    public static final int DATABASE_VERSION = 1; //increase this if you make changes to the database structure, i.e., rename columns, etc.
+    public static final int DATABASE_VERSION = 2; //increase this if you make changes to the database structure, i.e., rename columns, etc.
     public static final String DATABASE_NAME = "plugin_mwt.db"; //the database filename, use plugin_xxx for plugins.
 
     //Add here your database table names, as many as you need
@@ -55,9 +55,9 @@ public class Provider extends ContentProvider {
         public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.com.aware.plugin.mwt.provider.table_one"; //modify me
 
         //Note: integers and strings don't need a type prefix_
-        public static final String NAME = "name";
-        public static final String BIG_NUMBER = "double_big_number"; //a double_ prefix makes a MySQL DOUBLE column
-        public static final String PICTURE = "blob_picture"; //a blob_ prefix makes a MySQL BLOB column
+        public static final String ACTIVITY_NAME = "activity_name";
+        public static final String TRIGGER_CAUSE = "trigger_cause";
+        public static final String PACKAGE_NAME = "package_name";
     }
 
     //Define each database table fields
@@ -65,9 +65,9 @@ public class Provider extends ContentProvider {
             MWT_Data._ID + " integer primary key autoincrement," +
                     MWT_Data.TIMESTAMP + " real default 0," +
                     MWT_Data.DEVICE_ID + " text default ''," +
-                    MWT_Data.NAME + " text default ''," +
-                    MWT_Data.BIG_NUMBER + " real default 0," +
-                    MWT_Data.PICTURE + " blob default null";
+                    MWT_Data.ACTIVITY_NAME + " text default ''," +
+                    MWT_Data.TRIGGER_CAUSE + " text default ''," +
+                    MWT_Data.PACKAGE_NAME + " text default ''";
 
     /**
      * Share the fields with AWARE so we can replicate the table schema on the server
@@ -118,9 +118,9 @@ public class Provider extends ContentProvider {
         tableOneHash.put(MWT_Data._ID, MWT_Data._ID);
         tableOneHash.put(MWT_Data.TIMESTAMP, MWT_Data.TIMESTAMP);
         tableOneHash.put(MWT_Data.DEVICE_ID, MWT_Data.DEVICE_ID);
-        tableOneHash.put(MWT_Data.NAME, MWT_Data.NAME);
-        tableOneHash.put(MWT_Data.BIG_NUMBER, MWT_Data.BIG_NUMBER);
-        tableOneHash.put(MWT_Data.PICTURE, MWT_Data.PICTURE);
+        tableOneHash.put(MWT_Data.ACTIVITY_NAME, MWT_Data.ACTIVITY_NAME);
+        tableOneHash.put(MWT_Data.TRIGGER_CAUSE, MWT_Data.TRIGGER_CAUSE);
+        tableOneHash.put(MWT_Data.PACKAGE_NAME, MWT_Data.PACKAGE_NAME);
 
         return true;
     }
