@@ -76,11 +76,16 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_SERVER = "TRIGGER_SERVER";
 
     // config
+    private static final boolean CONFIG_PING_SERVER = true;
+    private static final int CONFIG_ESM_START_HOUR = 8;
+    private static final int CONFIG_ESM_END_HOUR = 21;
+
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 120;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 180;
 
     public static String activityName = "";
+    private static String triggerCause = "";
     private static long lastEsmMillis;
 
     private MwtListener eventListener;
@@ -102,22 +107,22 @@ public class Plugin extends Aware_Plugin {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
-                if (millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS && isCorrectDuration(now)) {
+                if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow()) {
                     Log.i(TAG, "[MWT ESM] Start: " + now);
                     Plugin.lastEsmMillis = now;
+                    triggerCause = trigger;
                     CONTEXT_PRODUCER.onContext();
-                    sendBroadcast(new Intent(ACTION_AWARE_MWT_DETECT));
+                    sendBroadcast(new Intent(ACTION_AWARE_MWT_DETECT).putExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE, trigger));
                     startESM(trigger);
                 }
             }
         }, millis);
     }
 
-    private static boolean isCorrectDuration(long now) {
+    private static boolean isCorrectDurationNow() {
         Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(now);
         int i = calendar.get(Calendar.HOUR_OF_DAY);
-        return i >= 8 && i <= 20;
+        return i >= CONFIG_ESM_START_HOUR && i <= CONFIG_ESM_END_HOUR;
     }
 
     private void startESM(String trigger) {
@@ -236,7 +241,10 @@ public class Plugin extends Aware_Plugin {
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 long now = System.currentTimeMillis();
-                if (isServerTriggerAvailable() && now - lastServerTriggerMillis > SERVER_TRIGGER_GAP_MILLIS) {
+                boolean shouldPingServer = CONFIG_PING_SERVER
+                        && now - lastServerTriggerMillis > SERVER_TRIGGER_GAP_MILLIS
+                        && isCorrectDurationNow();
+                if (shouldPingServer && isServerTriggerAvailable()) {
                     lastServerTriggerMillis = now;
 
                     Log.d(Aware.TAG, "[ESM TRIGGER] Server");
