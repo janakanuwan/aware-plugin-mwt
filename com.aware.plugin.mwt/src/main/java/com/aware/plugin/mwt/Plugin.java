@@ -189,6 +189,15 @@ public class Plugin extends Aware_Plugin {
 
             //Initialize our plugin's settings
             Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, true);
+            if (Aware.getSetting(this, Settings.STATUS_PLUGIN_PING_SERVER).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_PLUGIN_PING_SERVER, false);
+            }
+            if (Aware.getSetting(this, Settings.STATUS_ESM_START_HOUR).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_ESM_START_HOUR, 8);
+            }
+            if (Aware.getSetting(this, Settings.STATUS_ESM_END_HOUR).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_ESM_END_HOUR, 22);
+            }
 
             //Enable our plugin's sync-adapter to upload the data to the server if part of a study
             if (Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE).length() >= 0 && !Aware.isSyncEnabled(this, Provider.getAuthority(this)) && Aware.isStudy(this) && getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
