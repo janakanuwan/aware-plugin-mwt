@@ -74,11 +74,6 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_MANUAL = "TRIGGER_MANUAL";
     private static final String MWT_TRIGGER_SERVER = "TRIGGER_SERVER";
 
-    // config
-    private static final boolean CONFIG_PING_SERVER = true;
-    private static final int CONFIG_ESM_START_HOUR = 8;
-    private static final int CONFIG_ESM_END_HOUR = 21;
-
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 120;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 180;
@@ -117,10 +112,10 @@ public class Plugin extends Aware_Plugin {
         }, millis);
     }
 
-    private static boolean isCorrectDurationNow() {
+    private boolean isCorrectDurationNow() {
         Calendar calendar = Calendar.getInstance();
         int i = calendar.get(Calendar.HOUR_OF_DAY);
-        return i >= CONFIG_ESM_START_HOUR && i <= CONFIG_ESM_END_HOUR;
+        return i >= getEsmStartHour() && i < getEsmStopHour();
     }
 
     private void startESM(String trigger) {
@@ -241,7 +236,7 @@ public class Plugin extends Aware_Plugin {
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 long now = System.currentTimeMillis();
-                boolean shouldPingServer = CONFIG_PING_SERVER
+                boolean shouldPingServer = shouldPingServer()
                         && now - lastServerTriggerMillis > SERVER_TRIGGER_GAP_MILLIS
                         && isCorrectDurationNow();
                 if (shouldPingServer && isServerTriggerAvailable()) {
@@ -535,5 +530,17 @@ public class Plugin extends Aware_Plugin {
         eSMFactory.addESM(moodGrid);
 
         return eSMFactory.build();
+    }
+
+    private boolean shouldPingServer() {
+        return Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_PING_SERVER).equals("true");
+    }
+
+    private int getEsmStartHour() {
+        return Integer.valueOf(Aware.getSetting(getApplicationContext(), Settings.STATUS_ESM_START_HOUR));
+    }
+
+    private int getEsmStopHour() {
+        return Integer.valueOf(Aware.getSetting(getApplicationContext(), Settings.STATUS_ESM_END_HOUR));
     }
 }
