@@ -207,8 +207,6 @@ public class Plugin extends Aware_Plugin {
                 Aware.setSetting(this, Settings.STATUS_MWT_DETECTION, false);
             }
 
-            Log.d(TAG, "[TEST] onStartCommand");
-
             if (shouldPingServer()) {
                 startServerTriggers();
             } else {
