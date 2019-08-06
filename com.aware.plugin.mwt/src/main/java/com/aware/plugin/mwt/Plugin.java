@@ -23,6 +23,7 @@ import com.aware.ui.esms.ESM_Radio;
 import com.aware.utils.Aware_Plugin;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -75,8 +76,8 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_SERVER = "TRIGGER_SERVER";
 
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
-    private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 120;
-    private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 180;
+    private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 180;
+    private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
 
     public static String activityName = "";
     private static String triggerCause = "";
@@ -420,123 +421,218 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
                 .setTitle("Receptivity to learn")
-                .setInstructions("How interested you are in learning a new language now?")
+                .setInstructions("How interested you are in learning a new language (vocabulary) now?")
                 .setSubmitButton("Next")
                 .setTrigger(trigger)
                 .setExpirationThreshold(ESM_EXPIRATION_THRESHOLD_SECONDS)
                 .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
-        ESM_Freetext otherLearningActivitiesFreeText = new ESM_Freetext();
-        otherLearningActivitiesFreeText
-                .setTitle("Learning activity preferences")
-                .setInstructions("Any other desired things you like to learn now? If not why?")
-                .setSubmitButton("Next");
-        ESM_Radio roadFamiliarityRadio = new ESM_Radio();
-        roadFamiliarityRadio
-                .addRadio("Unfamiliar")
-                .addRadio("Moderately familiar")
-                .addRadio("Very familiar")
-                .setTitle("Familiarity")
-                .setInstructions("How familiar is the road/path?")
-                .setSubmitButton("Next");
-        ESM_Radio waitingReasonRadio = new ESM_Radio();
-        waitingReasonRadio
-                .addRadio("For bus/MRT/taxi")
-                .addRadio("For the lift")
-                .addRadio("For a friend/friends")
-                .addRadio("For food to be ready")
-                .addRadio("For a turn")
+
+        // commuting
+        ESM_Radio commutingMediumRadio = new ESM_Radio();
+        commutingMediumRadio
+                .addRadio("Walking")
+                .addRadio("Taking the bus")
+                .addRadio("Taking the MRT")
+                .addRadio("Riding a bike / driving")
+                .addRadio("Taking the lift / elevator")
                 .addRadio("Other")
-                .setTitle("Reason for waiting")
-                .setInstructions("Why/What are you waiting for?")
+                .setTitle("Commuting Medium")
+                .setInstructions("What's the medium of commuting?")
                 .setSubmitButton("Next");
+
+        // waiting
+        ESM_Radio waitingCategoryRadio = new ESM_Radio();
+        waitingCategoryRadio
+                .addRadio("Waiting for a working machine/system (e.g. wait for the printer, wait for loading, etc)")
+                .addRadio("Waiting for someone (e.g. hold on the phone, wait to go, etc)")
+                .addRadio("Waiting in turn (e.g. bus, queue, etc)")
+                .addRadio("Other")
+                .setTitle("Waiting Category")
+                .setInstructions("What's your purpose of waiting?")
+                .setSubmitButton("Next");
+        ESM_Radio waitingTimeRadio = new ESM_Radio();
+        waitingTimeRadio
+                .addRadio("Cannot be estimated")
+                .addRadio("Less than 1 min")
+                .addRadio("Between 1 min - 10 min")
+                .addRadio("Between 10 min - 20 min")
+                .addRadio("More than 20min")
+                .addRadio("Other")
+                .setTitle("Waiting Time")
+                .setInstructions("How long do you estimate you should wait?")
+                .setSubmitButton("Next");
+        ESMFactory waitingFactory = new ESMFactory();
+        waitingFactory.addESM(waitingCategoryRadio);
+        waitingFactory.addESM(waitingTimeRadio);
+
+        // relaxing
+        ESM_Radio relaxingCategoryRadio = new ESM_Radio();
+        relaxingCategoryRadio
+                .addRadio("Watching videos")
+                .addRadio("Listening to music")
+                .addRadio("Taking a break")
+                .addRadio("Reading")
+                .addRadio("Using a smart phone for leisure")
+                .addRadio("Other")
+                .setTitle("Relaxing Reason")
+                .setInstructions("What's your way of relaxing?")
+                .setSubmitButton("Next");
+
+        // conversing
+        ESM_Radio conversingMediumRadio = new ESM_Radio();
+        conversingMediumRadio
+                .addRadio("Face to face")
+                .addRadio("By audio/video call")
+                .addRadio("By text/multimedia messages")
+                .addRadio("Other")
+                .setTitle("Conversing Method")
+                .setInstructions("What's your way of conversing?")
+                .setSubmitButton("Next");
+
+        // primary activities
         ESM_Radio primaryActivityRadio = new ESM_Radio();
         primaryActivityRadio
-                .addRadio("Walking")
-                .addRadio("Waiting")
-                .addRadio("Consuming")
                 .addRadio("Commuting")
-                .addRadio("Exercising")
+                .addRadio("Waiting")
+                .addRadio("Relaxing")
+                .addRadio("Conversing")
+                .addRadio("Consuming")
                 .addRadio("Working/Studying")
+                .addRadio("Exercising")
+                .addRadio("Observing/Exploring")
                 .addRadio("Other")
-                .addFlow("Walking", roadFamiliarityRadio.build())
-                .addFlow("Commuting", roadFamiliarityRadio.build())
-                .addFlow("Waiting", waitingReasonRadio.build())
+                .addFlow("Commuting", commutingMediumRadio.build())
+                .addFlow("Waiting", new JSONObject(waitingFactory.build()))
+                .addFlow("Relaxing", relaxingCategoryRadio.build())
+                .addFlow("Conversing", conversingMediumRadio.build())
                 .setTitle("Primary Activity")
                 .setInstructions("What is the MAIN activity you are doing now?")
                 .setSubmitButton("Next");
-        ESM_Checkbox secondaryActivityCheckbox = new ESM_Checkbox();
-        secondaryActivityCheckbox
-                .addCheck("Conversing")
-                .addCheck("Exploring")
-                .addCheck("Observing")
-                .addCheck("Pondering")
-                .addCheck("Resting")
-                .addCheck("Mobile Checking")
-                .addCheck("Other")
-                .setTitle("Secondary Activity")
-                .setInstructions("What other activities you are doing now?")
-                .setSubmitButton("Next");
-        ESM_Likert mentalDemandLikert = new ESM_Likert();
-        mentalDemandLikert
-                .setLikertMax(7)
+
+        // common
+        ESM_Likert familiarityLikert = new ESM_Likert();
+        familiarityLikert
+                .setLikertMax(5)
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
-                .setTitle("Mental Demand")
-                .setInstructions("How mentally demanding is the task you are doing now?")
+                .setTitle("Familiarity")
+                .setInstructions("How familiar are you with the MAIN activity?")
+                .setSubmitButton("Next");
+        ESM_Radio postureRadio = new ESM_Radio();
+        postureRadio
+                .addRadio("Moving (e.g. walking/running)")
+                .addRadio("Standing")
+                .addRadio("Sitting")
+                .addRadio("Lying")
+                .addRadio("Other")
+                .setTitle("Body Posture")
+                .setInstructions("What's your posture?")
                 .setSubmitButton("Next");
         ESM_Likert physicalDemandLikert = new ESM_Likert();
         physicalDemandLikert
-                .setLikertMax(7)
+                .setLikertMax(5)
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
                 .setTitle("Physical Demand")
                 .setInstructions("How physically demanding is the task you are doing now?")
                 .setSubmitButton("Next");
-        ESM_Radio socialContextRadio = new ESM_Radio();
-        socialContextRadio
-                .addRadio("Alone")
-                .addRadio("With 1 person")
-                .addRadio("With 2 people")
-                .addRadio("With 3 people")
-                .addRadio("More than 3 people")
-                .setTitle("Social Context")
-                .setInstructions("How many acquaintances are there with you now?")
+        ESM_Likert mentalDemandLikert = new ESM_Likert();
+        mentalDemandLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Mental Demand")
+                .setInstructions("How mentally demanding is the task you are doing now?")
                 .setSubmitButton("Next");
-        ESM_Radio crowdRadio = new ESM_Radio();
-        crowdRadio
-                .addRadio("Less crowded")
-                .addRadio("Medium crowded")
-                .addRadio("Highly crowded")
-                .setTitle("Surrounding crowd")
-                .setInstructions("How crowded are your surroundings?")
+        ESM_Likert urgencyLikert = new ESM_Likert();
+        urgencyLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Urgent")
+                .setLikertMinLabel("Not Urgent")
+                .setLikertStep(1.0D)
+                .setTitle("Urgency")
+                .setInstructions("How urgent is the task you are doing now?")
                 .setSubmitButton("Next");
-        ESM_Radio physicalConditionRadio = new ESM_Radio();
-        physicalConditionRadio
-                .addRadio("Active")
-                .addRadio("Tired")
-                .addRadio("Normal")
-                .addRadio("Other")
+        ESM_Likert physicalConditionLikert = new ESM_Likert();
+        physicalConditionLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Active")
+                .setLikertMinLabel("Very Tired")
+                .setLikertStep(1.0D)
                 .setTitle("Physical Condition")
-                .setInstructions("How do you feel physically?")
+                .setInstructions("What is your physical condition now?")
                 .setSubmitButton("Next");
         ESM_PAM moodGrid = new ESM_PAM();
         moodGrid
                 .setTitle("Mood")
                 .setInstructions("What is your mood right now? Choose the most appropriate image.")
                 .setSubmitButton("OK");
+        ESM_Radio socialContextRadio = new ESM_Radio();
+        socialContextRadio
+                .addRadio("Alone")
+                .addRadio("Family members")
+                .addRadio("Friends")
+                .addRadio("Strangers")
+                .addRadio("Other")
+                .setTitle("Social Context")
+                .setInstructions("Who are you with now?")
+                .setSubmitButton("Next");
+        ESM_Likert crowdLikert = new ESM_Likert();
+        crowdLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Crowded")
+                .setLikertMinLabel("Not Crowded")
+                .setLikertStep(1.0D)
+                .setTitle("Crowdedness")
+                .setInstructions("How crowded is your environment now?")
+                .setSubmitButton("Next");
+        ESM_Checkbox environmentConditionCheckbox = new ESM_Checkbox();
+        environmentConditionCheckbox
+                .addCheck("Quiet")
+                .addCheck("Noisy")
+                .addCheck("Hot")
+                .addCheck("Cool")
+                .addCheck("Other")
+                .setTitle("Environmental Conditions")
+                .setInstructions("What are the environmental conditions?")
+                .setSubmitButton("Next");
+        ESM_Checkbox secondaryActivityCheckbox = new ESM_Checkbox();
+        secondaryActivityCheckbox
+                .addCheck("Commuting")
+                .addCheck("Waiting")
+                .addCheck("Relaxing")
+                .addCheck("Conversing")
+                .addCheck("Consuming")
+                .addCheck("Working/Studying")
+                .addCheck("Exercising")
+                .addCheck("Observing/Exploring")
+                .addCheck("Other")
+                .setTitle("Secondary Activity")
+                .setInstructions("What are the secondary activities you are doing now?")
+                .setSubmitButton("Next");
+        ESM_Freetext otherLearningActivitiesFreeText = new ESM_Freetext();
+        otherLearningActivitiesFreeText
+                .setTitle("Learning activity preferences")
+                .setInstructions("Any other desired things you like to learn now? If not why?")
+                .setSubmitButton("Next");
 
         eSMFactory.addESM(languageReceptivityLikert);
-        eSMFactory.addESM(otherLearningActivitiesFreeText);
-        eSMFactory.addESM(primaryActivityRadio);
-        eSMFactory.addESM(secondaryActivityCheckbox);
-        eSMFactory.addESM(mentalDemandLikert);
+        eSMFactory.addESM(conversingMediumRadio);
+        eSMFactory.addESM(familiarityLikert);
+        eSMFactory.addESM(postureRadio);
         eSMFactory.addESM(physicalDemandLikert);
-        eSMFactory.addESM(socialContextRadio);
-        eSMFactory.addESM(crowdRadio);
-        eSMFactory.addESM(physicalConditionRadio);
+        eSMFactory.addESM(mentalDemandLikert);
+        eSMFactory.addESM(urgencyLikert);
+        eSMFactory.addESM(physicalConditionLikert);
         eSMFactory.addESM(moodGrid);
+        eSMFactory.addESM(socialContextRadio);
+        eSMFactory.addESM(crowdLikert);
+        eSMFactory.addESM(environmentConditionCheckbox);
+        eSMFactory.addESM(secondaryActivityCheckbox);
+        eSMFactory.addESM(otherLearningActivitiesFreeText);
 
         return eSMFactory.build();
     }
