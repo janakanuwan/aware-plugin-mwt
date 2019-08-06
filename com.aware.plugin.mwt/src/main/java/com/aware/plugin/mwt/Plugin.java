@@ -16,14 +16,12 @@ import com.aware.Aware_Preferences;
 import com.aware.ESM;
 import com.aware.ui.esms.ESMFactory;
 import com.aware.ui.esms.ESM_Checkbox;
-import com.aware.ui.esms.ESM_Freetext;
 import com.aware.ui.esms.ESM_Likert;
 import com.aware.ui.esms.ESM_PAM;
 import com.aware.ui.esms.ESM_Radio;
 import com.aware.utils.Aware_Plugin;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -420,7 +418,7 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
-                .setTitle("Receptivity to learn")
+                .setTitle("Receptivity to Learn")
                 .setInstructions("How interested you are in learning a new language (vocabulary) now?")
                 .setSubmitButton("Next")
                 .setTrigger(trigger)
@@ -438,7 +436,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Other")
                 .setTitle("Commuting Medium")
                 .setInstructions("What's the medium of commuting?")
-                .setSubmitButton("Next");
+                .setSubmitButton("OK");
 
         // waiting
         ESM_Radio waitingCategoryRadio = new ESM_Radio();
@@ -460,10 +458,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Other")
                 .setTitle("Waiting Time")
                 .setInstructions("How long do you estimate you should wait?")
-                .setSubmitButton("Next");
-        ESMFactory waitingFactory = new ESMFactory();
-        waitingFactory.addESM(waitingCategoryRadio);
-        waitingFactory.addESM(waitingTimeRadio);
+                .setSubmitButton("OK");
 
         // relaxing
         ESM_Radio relaxingCategoryRadio = new ESM_Radio();
@@ -476,7 +471,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Other")
                 .setTitle("Relaxing Reason")
                 .setInstructions("What's your way of relaxing?")
-                .setSubmitButton("Next");
+                .setSubmitButton("OK");
 
         // conversing
         ESM_Radio conversingMediumRadio = new ESM_Radio();
@@ -487,7 +482,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Other")
                 .setTitle("Conversing Method")
                 .setInstructions("What's your way of conversing?")
-                .setSubmitButton("Next");
+                .setSubmitButton("OK");
 
         // primary activities
         ESM_Radio primaryActivityRadio = new ESM_Radio();
@@ -502,7 +497,8 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Observing/Exploring")
                 .addRadio("Other")
                 .addFlow("Commuting", commutingMediumRadio.build())
-                .addFlow("Waiting", new JSONObject(waitingFactory.build()))
+                .addFlow("Waiting", waitingCategoryRadio.build())
+                .addFlow("Waiting", waitingTimeRadio.build())
                 .addFlow("Relaxing", relaxingCategoryRadio.build())
                 .addFlow("Conversing", conversingMediumRadio.build())
                 .setTitle("Primary Activity")
@@ -569,7 +565,7 @@ public class Plugin extends Aware_Plugin {
         moodGrid
                 .setTitle("Mood")
                 .setInstructions("What is your mood right now? Choose the most appropriate image.")
-                .setSubmitButton("OK");
+                .setSubmitButton("Next");
         ESM_Radio socialContextRadio = new ESM_Radio();
         socialContextRadio
                 .addRadio("Alone")
@@ -613,14 +609,16 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Secondary Activity")
                 .setInstructions("What are the secondary activities you are doing now?")
                 .setSubmitButton("Next");
-        ESM_Freetext otherLearningActivitiesFreeText = new ESM_Freetext();
-        otherLearningActivitiesFreeText
-                .setTitle("Learning activity preferences")
+        ESM_Radio otherLearningActivityRadio = new ESM_Radio();
+        otherLearningActivityRadio
+                .addRadio("None")
+                .addRadio("Other")
+                .setTitle("Learning Activity Preferences")
                 .setInstructions("Any other desired things you like to learn now? If not why?")
-                .setSubmitButton("Next");
+                .setSubmitButton("OK/Next");
 
         eSMFactory.addESM(languageReceptivityLikert);
-        eSMFactory.addESM(conversingMediumRadio);
+        eSMFactory.addESM(primaryActivityRadio);
         eSMFactory.addESM(familiarityLikert);
         eSMFactory.addESM(postureRadio);
         eSMFactory.addESM(physicalDemandLikert);
@@ -632,7 +630,7 @@ public class Plugin extends Aware_Plugin {
         eSMFactory.addESM(crowdLikert);
         eSMFactory.addESM(environmentConditionCheckbox);
         eSMFactory.addESM(secondaryActivityCheckbox);
-        eSMFactory.addESM(otherLearningActivitiesFreeText);
+        eSMFactory.addESM(otherLearningActivityRadio);
 
         return eSMFactory.build();
     }
