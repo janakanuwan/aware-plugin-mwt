@@ -20,11 +20,14 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     public static final String STATUS_ESM_START_HOUR = "status_mwt_esm_start_time";
     public static final String STATUS_ESM_END_HOUR = "status_mwt_esm_end_time";
 
+    public static final String STATUS_MWT_DETECTION = "status_mwt_detection";
+
     //Plugin settings UI elements
     private static CheckBoxPreference status;
     private static CheckBoxPreference pingServer;
     private static EditTextPreference esmStartHour;
     private static EditTextPreference esmEndHour;
+    private static CheckBoxPreference mwtDetection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +65,12 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
             Aware.setSetting(this, STATUS_ESM_END_HOUR, 22);
         }
         esmEndHour.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_END_HOUR) + " hour");
+
+        mwtDetection = (CheckBoxPreference) findPreference(STATUS_MWT_DETECTION);
+        if (Aware.getSetting(this, STATUS_MWT_DETECTION).length() == 0) {
+            Aware.setSetting(this, STATUS_MWT_DETECTION, false); //by default, the setting is false on install
+        }
+        mwtDetection.setChecked(Aware.getSetting(getApplicationContext(), STATUS_MWT_DETECTION).equals("true"));
     }
 
     @Override
@@ -85,6 +94,11 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         if (setting.getKey().equals(STATUS_ESM_END_HOUR)) {
             Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, "22"));
             esmEndHour.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_END_HOUR) + " hour");
+        }
+
+        if (setting.getKey().equals(STATUS_MWT_DETECTION)) {
+            Aware.setSetting(this, key, sharedPreferences.getBoolean(key, false));
+            mwtDetection.setChecked(sharedPreferences.getBoolean(key, false));
         }
 
         if (Aware.getSetting(this, STATUS_PLUGIN_MWT).equals("true")) {

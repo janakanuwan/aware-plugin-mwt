@@ -31,4 +31,10 @@
         android:title="ESM end hour (in 24 hour)"
         android:inputType="number" />
 
+    <CheckBoxPreference
+        android:key="status_mwt_detection"
+        android:defaultValue="false"
+        android:persistent="true"
+        android:summary="Detect MWT" />
+
 </PreferenceScreen>

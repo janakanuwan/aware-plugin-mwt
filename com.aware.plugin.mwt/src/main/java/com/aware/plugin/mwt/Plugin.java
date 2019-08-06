@@ -29,8 +29,12 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Calendar;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Plugin extends Aware_Plugin {
 
@@ -38,6 +42,7 @@ public class Plugin extends Aware_Plugin {
     public static final String ACTION_AWARE_MWT_TRIGGER = "ACTION_AWARE_MWT_TRIGGER";
 
     private static final String ACTION_AWARE_MWT_TRIGGER_CAUSE = "ACTION_AWARE_MWT_TRIGGER_CAUSE";
+    private static final String ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS = "ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS";
 
     public static final int ACTIVITY_CODE_IN_VEHICLE = 0;
     public static final int ACTIVITY_CODE_ON_BICYCLE = 1;
@@ -72,10 +77,12 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_AFTER_CALL = "TRIGGER_AFTER_CALL";
     private static final String MWT_TRIGGER_MANUAL = "TRIGGER_MANUAL";
     private static final String MWT_TRIGGER_SERVER = "TRIGGER_SERVER";
+    private static final String MWT_TRIGGER_RANDOM = "TRIGGER_RANDOM";
 
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 180;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
+    private static final int ESM_RANDOM_SCHEDULE_MINUTES = 120;
 
     public static String activityName = "";
     private static String triggerCause = "";
@@ -102,7 +109,7 @@ public class Plugin extends Aware_Plugin {
             public void run() {
                 long now = System.currentTimeMillis();
                 if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow()) {
-                    Log.i(TAG, "[MWT ESM] Start: " + now);
+                    Log.i(TAG, "[MWT ESM] Start: " + now + ", cause: " + triggerCause);
                     lastEsmMillis = now;
                     CONTEXT_PRODUCER.onContext();
                     startESM(triggerCause);
@@ -158,7 +165,6 @@ public class Plugin extends Aware_Plugin {
             }
         };
         registerEventListener();
-        startServerTriggers();
         Log.i(TAG, "[MWT] OnCreate");
     }
 
@@ -197,6 +203,22 @@ public class Plugin extends Aware_Plugin {
             if (Aware.getSetting(this, Settings.STATUS_ESM_END_HOUR).length() == 0) {
                 Aware.setSetting(this, Settings.STATUS_ESM_END_HOUR, 22);
             }
+            if (Aware.getSetting(this, Settings.STATUS_MWT_DETECTION).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_MWT_DETECTION, false);
+            }
+
+            Log.d(TAG, "[TEST] onStartCommand");
+
+            if (shouldPingServer()) {
+                startServerTriggers();
+            } else {
+                stopServerTrigger();
+            }
+            if (!shouldDetectMwt()) {
+                startRandomEsmScheduler();
+            } else {
+                stopRandomEsmScheduler();
+            }
 
             //Enable our plugin's sync-adapter to upload the data to the server if part of a study
             if (Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE).length() >= 0 && !Aware.isSyncEnabled(this, Provider.getAuthority(this)) && Aware.isStudy(this) && getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
@@ -219,6 +241,7 @@ public class Plugin extends Aware_Plugin {
         super.onDestroy();
 
         stopServerTrigger();
+        stopRandomEsmScheduler();
         unregisterEventListener();
 
         ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);
@@ -244,10 +267,9 @@ public class Plugin extends Aware_Plugin {
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 long now = System.currentTimeMillis();
-                boolean shouldPingServer = shouldPingServer()
-                        && now - lastServerTriggerMillis > SERVER_TRIGGER_GAP_MILLIS
-                        && isCorrectDurationNow();
-                if (shouldPingServer && isServerTriggerAvailable()) {
+                if (now - lastServerTriggerMillis > SERVER_TRIGGER_GAP_MILLIS
+                        && isCorrectDurationNow()
+                        && isServerTriggerAvailable()) {
                     lastServerTriggerMillis = now;
 
                     Log.d(Aware.TAG, "[ESM TRIGGER] Server");
@@ -299,6 +321,33 @@ public class Plugin extends Aware_Plugin {
         }
     }
 
+    private ScheduledExecutorService esmScheduler = null;
+
+    private void startRandomEsmScheduler() {
+        stopRandomEsmScheduler();
+
+        esmScheduler = Executors.newSingleThreadScheduledExecutor();
+        esmScheduler.scheduleAtFixedRate(new Runnable() {
+            public void run() {
+                if (isCorrectDurationNow()) {
+                    Log.d(Aware.TAG, "[ESM TRIGGER] Random ESM");
+                    Intent esmTriggerIntent = new Intent(ACTION_AWARE_MWT_TRIGGER);
+                    esmTriggerIntent.putExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE, MWT_TRIGGER_RANDOM);
+                    esmTriggerIntent.putExtra(ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS, (new Random().nextInt(ESM_RANDOM_SCHEDULE_MINUTES) * 60 * 1000L));
+                    sendBroadcast(esmTriggerIntent);
+                }
+            }
+        }, 0, ESM_RANDOM_SCHEDULE_MINUTES, TimeUnit.MINUTES);
+    }
+
+    private void stopRandomEsmScheduler() {
+        if (esmScheduler != null) {
+            esmScheduler.shutdownNow();
+            esmScheduler = null;
+        }
+    }
+
+
     private static class MwtListener extends BroadcastReceiver {
         private static final String TAG_AWARE_MWT = "AWARE::MWT";
         private final Plugin plugin;
@@ -313,6 +362,26 @@ public class Plugin extends Aware_Plugin {
         public void onReceive(Context param1Context, Intent intent) {
             String action = intent.getAction();
             Log.d(TAG_AWARE_MWT, "[ACTION]: " + action);
+
+            if (plugin.shouldDetectMwt()) {
+                detectMwt(intent);
+            }
+
+            if (ACTION_AWARE_MWT_TRIGGER.equals(action)) {
+                String trigger = intent.getStringExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE);
+                if (trigger == null) {
+                    trigger = MWT_TRIGGER_MANUAL;
+                }
+                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] " + trigger);
+
+                triggerCause = trigger;
+                long initDelayMillis = intent.getLongExtra(ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS, 0);
+                plugin.scheduleMWTTrigger(initDelayMillis);
+            }
+        }
+
+        private void detectMwt(Intent intent) {
+            String action = intent.getAction();
 
             boolean expectedActivity = false;
 
@@ -357,16 +426,6 @@ public class Plugin extends Aware_Plugin {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
                 triggerCause = MWT_TRIGGER_AFTER_CALL;
                 plugin.scheduleMWTTrigger(5000L);
-            }
-
-            if (ACTION_AWARE_MWT_TRIGGER.equals(action)) {
-                String trigger = intent.getStringExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE);
-                if (trigger == null) {
-                    trigger = MWT_TRIGGER_MANUAL;
-                }
-                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] " + trigger);
-                triggerCause = trigger;
-                plugin.scheduleMWTTrigger(0);
             }
         }
 
@@ -645,5 +704,9 @@ public class Plugin extends Aware_Plugin {
 
     private int getEsmStopHour() {
         return Integer.valueOf(Aware.getSetting(getApplicationContext(), Settings.STATUS_ESM_END_HOUR));
+    }
+
+    private boolean shouldDetectMwt() {
+        return Aware.getSetting(getApplicationContext(), Settings.STATUS_MWT_DETECTION).equals("true");
     }
 }
