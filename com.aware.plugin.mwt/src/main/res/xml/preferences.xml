@@ -4,37 +4,43 @@
     android:title="@string/app_name">
 
     <CheckBoxPreference
-        android:key="status_plugin_mwt"
         android:defaultValue="false"
+        android:key="status_plugin_mwt"
         android:persistent="true"
         android:summary="Activate/deactivate plugin" />
 
     <CheckBoxPreference
-        android:key="status_mwt_ping_server"
         android:defaultValue="false"
+        android:key="status_mwt_ping_server"
         android:persistent="true"
         android:summary="Ping server" />
 
     <EditTextPreference
         android:defaultValue="8"
+        android:inputType="number"
         android:key="status_mwt_esm_start_time"
         android:persistent="true"
         android:summary="08 hour"
-        android:title="ESM start hour (in 24 hour)"
-        android:inputType="number" />
+        android:title="ESM start hour (in 24 hour)" />
 
     <EditTextPreference
         android:defaultValue="22"
+        android:inputType="number"
         android:key="status_mwt_esm_end_time"
         android:persistent="true"
         android:summary="22 hour"
-        android:title="ESM end hour (in 24 hour)"
-        android:inputType="number" />
+        android:title="ESM end hour (in 24 hour)" />
 
     <CheckBoxPreference
-        android:key="status_mwt_detection"
         android:defaultValue="false"
+        android:key="status_mwt_detection"
         android:persistent="true"
         android:summary="Detect MWT" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="status_esm_random"
+        android:persistent="true"
+        android:summary="Enable Random ESM" />
 
 </PreferenceScreen>

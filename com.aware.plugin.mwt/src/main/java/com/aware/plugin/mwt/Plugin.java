@@ -82,7 +82,7 @@ public class Plugin extends Aware_Plugin {
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 180;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
-    private static final int ESM_RANDOM_SCHEDULE_MINUTES = 120;
+    private static final int ESM_RANDOM_SCHEDULE_MINUTES = 100;
 
     public static String activityName = "";
     private static String triggerCause = "";
@@ -206,13 +206,16 @@ public class Plugin extends Aware_Plugin {
             if (Aware.getSetting(this, Settings.STATUS_MWT_DETECTION).length() == 0) {
                 Aware.setSetting(this, Settings.STATUS_MWT_DETECTION, false);
             }
+            if (Aware.getSetting(this, Settings.STATUS_RANDOM_ESM).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_RANDOM_ESM, false);
+            }
 
             if (shouldPingServer()) {
                 startServerTriggers();
             } else {
                 stopServerTrigger();
             }
-            if (!shouldDetectMwt()) {
+            if (shouldEnableRandomEsm()) {
                 startRandomEsmScheduler();
             } else {
                 stopRandomEsmScheduler();
@@ -712,5 +715,9 @@ public class Plugin extends Aware_Plugin {
 
     private boolean shouldDetectMwt() {
         return Aware.getSetting(getApplicationContext(), Settings.STATUS_MWT_DETECTION).equals("true");
+    }
+
+    private boolean shouldEnableRandomEsm() {
+        return Aware.getSetting(getApplicationContext(), Settings.STATUS_RANDOM_ESM).equals("true");
     }
 }
