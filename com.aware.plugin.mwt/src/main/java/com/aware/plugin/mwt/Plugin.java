@@ -544,20 +544,20 @@ public class Plugin extends Aware_Plugin {
         // primary activities
         ESM_Radio primaryActivityRadio = new ESM_Radio();
         primaryActivityRadio
-                .addRadio("Commuting")
+                .addRadio("Commuting (e.g. walking/bus/lift)")
                 .addRadio("Waiting")
                 .addRadio("Relaxing")
-                .addRadio("Conversing")
+                .addRadio("Conversing (e.g. talk/call/chat)")
                 .addRadio("Consuming")
                 .addRadio("Working/Studying")
                 .addRadio("Exercising")
                 .addRadio("Observing/Exploring")
                 .addRadio("Other")
-                .addFlow("Commuting", commutingMediumRadio.build())
+                .addFlow("Commuting (e.g. walking/bus/lift)", commutingMediumRadio.build())
                 .addFlow("Waiting", waitingCategoryRadio.build())
                 .addFlow("Waiting", waitingTimeRadio.build())
                 .addFlow("Relaxing", relaxingCategoryRadio.build())
-                .addFlow("Conversing", conversingMediumRadio.build())
+                .addFlow("Conversing (e.g. talk/call/chat)", conversingMediumRadio.build())
                 .setTitle("Primary Activity")
                 .setInstructions("What is the MAIN activity you are doing now?")
                 .setSubmitButton("Next");
@@ -652,19 +652,25 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Environmental Conditions")
                 .setInstructions("What are the environmental conditions?")
                 .setSubmitButton("Next");
-        ESM_Checkbox secondaryActivityCheckbox = new ESM_Checkbox();
-        secondaryActivityCheckbox
-                .addCheck("Commuting")
-                .addCheck("Waiting")
-                .addCheck("Relaxing")
-                .addCheck("Conversing")
-                .addCheck("Consuming")
-                .addCheck("Working/Studying")
-                .addCheck("Exercising")
-                .addCheck("Observing/Exploring")
-                .addCheck("Other")
+        ESM_Radio secondaryActivityRadio = new ESM_Radio();
+        secondaryActivityRadio
+                .addRadio("Commuting")
+                .addRadio("Waiting")
+                .addRadio("Relaxing")
+                .addRadio("Conversing")
+                .addRadio("Consuming")
+                .addRadio("Working/Studying")
+                .addRadio("Exercising")
+                .addRadio("Observing/Exploring")
+                .addRadio("Doing Nothing")
+                .addRadio("Other")
+                .addFlow("Commuting", commutingMediumRadio.build())
+                .addFlow("Waiting", waitingCategoryRadio.build())
+                .addFlow("Waiting", waitingTimeRadio.build())
+                .addFlow("Relaxing", relaxingCategoryRadio.build())
+                .addFlow("Conversing", conversingMediumRadio.build())
                 .setTitle("Secondary Activity")
-                .setInstructions("What are the secondary activities you are doing now?")
+                .setInstructions("What is the secondary activities you are doing now?")
                 .setSubmitButton("Next");
         ESM_Radio otherLearningActivityRadio = new ESM_Radio();
         otherLearningActivityRadio
@@ -686,7 +692,7 @@ public class Plugin extends Aware_Plugin {
         eSMFactory.addESM(socialContextRadio);
         eSMFactory.addESM(crowdLikert);
         eSMFactory.addESM(environmentConditionCheckbox);
-        eSMFactory.addESM(secondaryActivityCheckbox);
+        eSMFactory.addESM(secondaryActivityRadio);
         eSMFactory.addESM(otherLearningActivityRadio);
 
         return eSMFactory.build();
