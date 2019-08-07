@@ -82,7 +82,6 @@ public class Plugin extends Aware_Plugin {
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 180;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
-//    private static final int ESM_RANDOM_SCHEDULE_MINUTES = 100;
 
     public static String activityName = "";
     private static String triggerCause = "";
@@ -198,10 +197,10 @@ public class Plugin extends Aware_Plugin {
                 Aware.setSetting(this, Settings.STATUS_PLUGIN_PING_SERVER, false);
             }
             if (Aware.getSetting(this, Settings.STATUS_ESM_START_HOUR).length() == 0) {
-                Aware.setSetting(this, Settings.STATUS_ESM_START_HOUR, 8);
+                Aware.setSetting(this, Settings.STATUS_ESM_START_HOUR, Settings.DEFAULT_ESM_START_HOUR);
             }
             if (Aware.getSetting(this, Settings.STATUS_ESM_END_HOUR).length() == 0) {
-                Aware.setSetting(this, Settings.STATUS_ESM_END_HOUR, 22);
+                Aware.setSetting(this, Settings.STATUS_ESM_END_HOUR, Settings.DEFAULT_ESM_END_HOUR);
             }
             if (Aware.getSetting(this, Settings.STATUS_MWT_DETECTION).length() == 0) {
                 Aware.setSetting(this, Settings.STATUS_MWT_DETECTION, false);
@@ -209,8 +208,8 @@ public class Plugin extends Aware_Plugin {
             if (Aware.getSetting(this, Settings.STATUS_RANDOM_ESM).length() == 0) {
                 Aware.setSetting(this, Settings.STATUS_RANDOM_ESM, false);
             }
-            if (Aware.getSetting(this, Settings.STATUS_RANDOM_ESM_GAP).length() == 0) {
-                Aware.setSetting(this, Settings.STATUS_RANDOM_ESM_GAP, 100);
+            if (Aware.getSetting(this, Settings.STATUS_RANDOM_ESM_GAP_MINUTES).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_RANDOM_ESM_GAP_MINUTES, Settings.DEFAULT_RANDOM_ESM_GAP_MINUTES);
             }
 
             if (shouldPingServer()) {
@@ -727,6 +726,6 @@ public class Plugin extends Aware_Plugin {
     }
 
     private int getRandomEsmGapInMinutes() {
-        return Integer.valueOf(Aware.getSetting(getApplicationContext(), Settings.STATUS_RANDOM_ESM_GAP));
+        return Integer.valueOf(Aware.getSetting(getApplicationContext(), Settings.STATUS_RANDOM_ESM_GAP_MINUTES));
     }
 }

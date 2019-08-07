@@ -22,7 +22,11 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
 
     public static final String STATUS_MWT_DETECTION = "status_mwt_detection";
     public static final String STATUS_RANDOM_ESM = "status_esm_random";
-    public static final String STATUS_RANDOM_ESM_GAP = "status_esm_random_gap_minutes";
+    public static final String STATUS_RANDOM_ESM_GAP_MINUTES = "status_esm_random_gap_minutes";
+
+    public static final int DEFAULT_ESM_START_HOUR = 8;
+    public static final int DEFAULT_ESM_END_HOUR = 22;
+    public static final int DEFAULT_RANDOM_ESM_GAP_MINUTES = 100;
 
     //Plugin settings UI elements
     private static CheckBoxPreference status;
@@ -31,7 +35,7 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     private static EditTextPreference esmEndHour;
     private static CheckBoxPreference mwtDetection;
     private static CheckBoxPreference randomEsm;
-    private static EditTextPreference randomEsmGap;
+    private static EditTextPreference randomEsmGapMinutes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,13 +64,13 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
 
         esmStartHour = (EditTextPreference) findPreference(STATUS_ESM_START_HOUR);
         if (Aware.getSetting(this, STATUS_ESM_START_HOUR).length() == 0) {
-            Aware.setSetting(this, STATUS_ESM_START_HOUR, 8);
+            Aware.setSetting(this, STATUS_ESM_START_HOUR, DEFAULT_ESM_START_HOUR);
         }
         esmStartHour.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_START_HOUR) + " hour");
 
         esmEndHour = (EditTextPreference) findPreference(STATUS_ESM_END_HOUR);
         if (Aware.getSetting(this, STATUS_ESM_END_HOUR).length() == 0) {
-            Aware.setSetting(this, STATUS_ESM_END_HOUR, 22);
+            Aware.setSetting(this, STATUS_ESM_END_HOUR, DEFAULT_ESM_END_HOUR);
         }
         esmEndHour.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_END_HOUR) + " hour");
 
@@ -82,11 +86,11 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         }
         randomEsm.setChecked(Aware.getSetting(getApplicationContext(), STATUS_RANDOM_ESM).equals("true"));
 
-        randomEsmGap = (EditTextPreference) findPreference(STATUS_RANDOM_ESM_GAP);
-        if (Aware.getSetting(this, STATUS_RANDOM_ESM_GAP).length() == 0) {
-            Aware.setSetting(this, STATUS_RANDOM_ESM_GAP, 100);
+        randomEsmGapMinutes = (EditTextPreference) findPreference(STATUS_RANDOM_ESM_GAP_MINUTES);
+        if (Aware.getSetting(this, STATUS_RANDOM_ESM_GAP_MINUTES).length() == 0) {
+            Aware.setSetting(this, STATUS_RANDOM_ESM_GAP_MINUTES, DEFAULT_RANDOM_ESM_GAP_MINUTES);
         }
-        randomEsmGap.setSummary(Aware.getSetting(getApplicationContext(), STATUS_RANDOM_ESM_GAP) + " minutes");
+        randomEsmGapMinutes.setSummary(Aware.getSetting(getApplicationContext(), STATUS_RANDOM_ESM_GAP_MINUTES) + " minutes");
     }
 
     @Override
@@ -103,12 +107,12 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         }
 
         if (setting.getKey().equals(STATUS_ESM_START_HOUR)) {
-            Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, "8"));
+            Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, String.valueOf(DEFAULT_ESM_START_HOUR)));
             esmStartHour.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_START_HOUR) + " hour");
         }
 
         if (setting.getKey().equals(STATUS_ESM_END_HOUR)) {
-            Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, "22"));
+            Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, String.valueOf(DEFAULT_ESM_END_HOUR)));
             esmEndHour.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_END_HOUR) + " hour");
         }
 
@@ -122,9 +126,9 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
             randomEsm.setChecked(sharedPreferences.getBoolean(key, false));
         }
 
-        if (setting.getKey().equals(STATUS_RANDOM_ESM_GAP)) {
-            Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, "100"));
-            randomEsmGap.setSummary(Aware.getSetting(getApplicationContext(), STATUS_RANDOM_ESM_GAP) + " minutes");
+        if (setting.getKey().equals(STATUS_RANDOM_ESM_GAP_MINUTES)) {
+            Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, String.valueOf(DEFAULT_RANDOM_ESM_GAP_MINUTES)));
+            randomEsmGapMinutes.setSummary(Aware.getSetting(getApplicationContext(), STATUS_RANDOM_ESM_GAP_MINUTES) + " minutes");
         }
 
         if (Aware.getSetting(this, STATUS_PLUGIN_MWT).equals("true")) {
