@@ -43,4 +43,12 @@
         android:persistent="true"
         android:summary="Enable Random ESM" />
 
+    <EditTextPreference
+        android:defaultValue="100"
+        android:inputType="number"
+        android:key="status_esm_random_gap_minutes"
+        android:persistent="true"
+        android:summary="100 minutes"
+        android:title="Time gap between random  ESM (in minutes)" />
+
 </PreferenceScreen>

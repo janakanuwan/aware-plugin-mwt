@@ -82,7 +82,7 @@ public class Plugin extends Aware_Plugin {
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 180;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
-    private static final int ESM_RANDOM_SCHEDULE_MINUTES = 100;
+//    private static final int ESM_RANDOM_SCHEDULE_MINUTES = 100;
 
     public static String activityName = "";
     private static String triggerCause = "";
@@ -209,6 +209,9 @@ public class Plugin extends Aware_Plugin {
             if (Aware.getSetting(this, Settings.STATUS_RANDOM_ESM).length() == 0) {
                 Aware.setSetting(this, Settings.STATUS_RANDOM_ESM, false);
             }
+            if (Aware.getSetting(this, Settings.STATUS_RANDOM_ESM_GAP).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_RANDOM_ESM_GAP, 100);
+            }
 
             if (shouldPingServer()) {
                 startServerTriggers();
@@ -327,6 +330,8 @@ public class Plugin extends Aware_Plugin {
     private void startRandomEsmScheduler() {
         stopRandomEsmScheduler();
 
+        final int randomEsmGapInMinutes = getRandomEsmGapInMinutes();
+
         esmScheduler = Executors.newSingleThreadScheduledExecutor();
         esmScheduler.scheduleAtFixedRate(new Runnable() {
             public void run() {
@@ -334,11 +339,11 @@ public class Plugin extends Aware_Plugin {
                     Log.d(Aware.TAG, "[ESM TRIGGER] Random ESM");
                     Intent esmTriggerIntent = new Intent(ACTION_AWARE_MWT_TRIGGER);
                     esmTriggerIntent.putExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE, MWT_TRIGGER_RANDOM);
-                    esmTriggerIntent.putExtra(ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS, (new Random().nextInt(ESM_RANDOM_SCHEDULE_MINUTES) * 60 * 1000L));
+                    esmTriggerIntent.putExtra(ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS, (new Random().nextInt(randomEsmGapInMinutes) * 60 * 1000L));
                     sendBroadcast(esmTriggerIntent);
                 }
             }
-        }, 0, ESM_RANDOM_SCHEDULE_MINUTES, TimeUnit.MINUTES);
+        }, 0, randomEsmGapInMinutes, TimeUnit.MINUTES);
     }
 
     private void stopRandomEsmScheduler() {
@@ -719,5 +724,9 @@ public class Plugin extends Aware_Plugin {
 
     private boolean shouldEnableRandomEsm() {
         return Aware.getSetting(getApplicationContext(), Settings.STATUS_RANDOM_ESM).equals("true");
+    }
+
+    private int getRandomEsmGapInMinutes() {
+        return Integer.valueOf(Aware.getSetting(getApplicationContext(), Settings.STATUS_RANDOM_ESM_GAP));
     }
 }
