@@ -17,6 +17,7 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
 
     public static final String STATUS_PLUGIN_PING_SERVER = "status_mwt_ping_server";
 
+    public static final String STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS = "status_esm_expiration_threshold";
     public static final String STATUS_ESM_START_HOUR = "status_mwt_esm_start_time";
     public static final String STATUS_ESM_END_HOUR = "status_mwt_esm_end_time";
 
@@ -24,6 +25,7 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     public static final String STATUS_RANDOM_ESM = "status_esm_random";
     public static final String STATUS_RANDOM_ESM_GAP_MINUTES = "status_esm_random_gap_minutes";
 
+    public static final int DEFAULT_ESM_EXPIRATION_THRESHOLD_SECONDS = 180;
     public static final int DEFAULT_ESM_START_HOUR = 8;
     public static final int DEFAULT_ESM_END_HOUR = 22;
     public static final int DEFAULT_RANDOM_ESM_GAP_MINUTES = 100;
@@ -31,6 +33,7 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     //Plugin settings UI elements
     private static CheckBoxPreference status;
     private static CheckBoxPreference pingServer;
+    private static EditTextPreference esmExpirationThresholdSeconds;
     private static EditTextPreference esmStartHour;
     private static EditTextPreference esmEndHour;
     private static CheckBoxPreference mwtDetection;
@@ -55,12 +58,17 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         }
         status.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_MWT).equals("true"));
 
-        // ping server
         pingServer = (CheckBoxPreference) findPreference(STATUS_PLUGIN_PING_SERVER);
         if (Aware.getSetting(this, STATUS_PLUGIN_PING_SERVER).length() == 0) {
             Aware.setSetting(this, STATUS_PLUGIN_PING_SERVER, false); //by default, the setting is false on install
         }
         pingServer.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_PING_SERVER).equals("true"));
+
+        esmExpirationThresholdSeconds = (EditTextPreference) findPreference(STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS);
+        if (Aware.getSetting(this, STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS).length() == 0) {
+            Aware.setSetting(this, STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS, DEFAULT_ESM_EXPIRATION_THRESHOLD_SECONDS);
+        }
+        esmExpirationThresholdSeconds.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS) + " seconds");
 
         esmStartHour = (EditTextPreference) findPreference(STATUS_ESM_START_HOUR);
         if (Aware.getSetting(this, STATUS_ESM_START_HOUR).length() == 0) {
@@ -104,6 +112,11 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         if (setting.getKey().equals(STATUS_PLUGIN_PING_SERVER)) {
             Aware.setSetting(this, key, sharedPreferences.getBoolean(key, false));
             pingServer.setChecked(sharedPreferences.getBoolean(key, false));
+        }
+
+        if (setting.getKey().equals(STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS)) {
+            Aware.setSetting(getApplicationContext(), key, sharedPreferences.getString(key, String.valueOf(DEFAULT_ESM_EXPIRATION_THRESHOLD_SECONDS)));
+            esmExpirationThresholdSeconds.setSummary(Aware.getSetting(getApplicationContext(), STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS) + " seconds");
         }
 
         if (setting.getKey().equals(STATUS_ESM_START_HOUR)) {

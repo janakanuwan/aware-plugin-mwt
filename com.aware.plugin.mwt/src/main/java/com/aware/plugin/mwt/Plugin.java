@@ -80,7 +80,6 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_RANDOM = "TRIGGER_RANDOM";
 
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
-    private static final int ESM_EXPIRATION_THRESHOLD_SECONDS = 180;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
 
     public static String activityName = "";
@@ -125,7 +124,7 @@ public class Plugin extends Aware_Plugin {
 
     private void startESM(String trigger) {
         try {
-            ESM.queueESM(this, getQuestionnaire(trigger));
+            ESM.queueESM(this, getQuestionnaire(trigger, getEsmExpirationThresholdSeconds()));
         } catch (JSONException jSONException) {
             Log.e(this.TAG, "[MWT_ESM] Error", jSONException);
         }
@@ -195,6 +194,9 @@ public class Plugin extends Aware_Plugin {
             Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, true);
             if (Aware.getSetting(this, Settings.STATUS_PLUGIN_PING_SERVER).length() == 0) {
                 Aware.setSetting(this, Settings.STATUS_PLUGIN_PING_SERVER, false);
+            }
+            if (Aware.getSetting(this, Settings.STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS).length() == 0) {
+                Aware.setSetting(this, Settings.STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS, Settings.DEFAULT_ESM_EXPIRATION_THRESHOLD_SECONDS);
             }
             if (Aware.getSetting(this, Settings.STATUS_ESM_START_HOUR).length() == 0) {
                 Aware.setSetting(this, Settings.STATUS_ESM_START_HOUR, Settings.DEFAULT_ESM_START_HOUR);
@@ -473,7 +475,7 @@ public class Plugin extends Aware_Plugin {
         }
     }
 
-    private static String getQuestionnaire(String trigger) throws JSONException {
+    private static String getQuestionnaire(String trigger, int emsExpirationThresholdInSeconds) throws JSONException {
         ESMFactory eSMFactory = new ESMFactory();
 
         ESM_Likert languageReceptivityLikert = new ESM_Likert();
@@ -486,7 +488,7 @@ public class Plugin extends Aware_Plugin {
                 .setInstructions("How interested you are in learning a new language (vocabulary) now?")
                 .setSubmitButton("Next")
                 .setTrigger(trigger)
-                .setExpirationThreshold(ESM_EXPIRATION_THRESHOLD_SECONDS)
+                .setExpirationThreshold(emsExpirationThresholdInSeconds)
                 .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
 
         // commuting
@@ -707,6 +709,10 @@ public class Plugin extends Aware_Plugin {
 
     private boolean shouldPingServer() {
         return Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_PING_SERVER).equals("true");
+    }
+
+    private int getEsmExpirationThresholdSeconds() {
+        return Integer.valueOf(Aware.getSetting(getApplicationContext(), Settings.STATUS_ESM_EXPIRATION_THRESHOLD_SECONDS));
     }
 
     private int getEsmStartHour() {

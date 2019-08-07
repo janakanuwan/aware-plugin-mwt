@@ -16,6 +16,14 @@
         android:summary="Ping server" />
 
     <EditTextPreference
+        android:defaultValue="180"
+        android:inputType="number"
+        android:key="status_esm_expiration_threshold"
+        android:persistent="true"
+        android:summary="180 seconds"
+        android:title="ESM expiration threshold (in seconds, 0 = unlimited)" />
+
+    <EditTextPreference
         android:defaultValue="8"
         android:inputType="number"
         android:key="status_mwt_esm_start_time"
