@@ -259,7 +259,7 @@ public class Plugin extends Aware_Plugin {
         Aware.setSetting(this, Settings.STATUS_PLUGIN_MWT, false);
     }
 
-    private static final long SERVER_PING_DELAY_MILLIS = 10 * 1000L;
+    private static final long SERVER_PING_DELAY_MILLIS = 5 * 1000L;
     private static final long SERVER_TRIGGER_GAP_MILLIS = 60 * 1000L;
 
     private Timer timer = null;
