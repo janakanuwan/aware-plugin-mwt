@@ -27,7 +27,7 @@ public class Provider extends ContentProvider {
     public static final String DATABASE_NAME = "plugin_mwt.db"; //the database filename, use plugin_xxx for plugins.
 
     //Add here your database table names, as many as you need
-    public static final String DB_TBL_TEMPLATE = "table_one";
+    public static final String DB_TBL_TEMPLATE = "mwt";
 
     //For each table, add two indexes: DIR and ITEM. The index needs to always increment. Next one is 3, and so on.
     private static final int TABLE_ONE_DIR = 1;
