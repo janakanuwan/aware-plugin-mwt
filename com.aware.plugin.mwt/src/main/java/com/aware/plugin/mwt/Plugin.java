@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
@@ -82,8 +83,22 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_SERVER = "TRIGGER_SERVER";
     private static final String MWT_TRIGGER_RANDOM = "TRIGGER_RANDOM";
 
+    private static final String MWT_TRIGGER_WALKING = "TRIGGER_WALKING";
+    private static final String MWT_TRIGGER_VEHICLE = "TRIGGER_VEHICLE";
+
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
+
+    private static final long MILLIS_IMMEDIATELY = 1L;
+    private static final long MILLIS_1_SECOND = 1000L;
+    private static final long MILLIS_30_SECONDS = 30 * MILLIS_1_SECOND;
+    private static final long MILLIS_90_SECONDS = 90 * MILLIS_1_SECOND;
+    private static final long MILLIS_1_MINUTE = 60 * MILLIS_1_SECOND;
+    private static final long MILLIS_2_MINUTES = 2 * MILLIS_1_MINUTE;
+    private static final long MILLIS_3_MINUTES = 3 * MILLIS_1_MINUTE;
+    private static final long MILLIS_5_MINUTES = 5 * MILLIS_1_MINUTE;
+    private static final long MILLIS_10_MINUTES = 10 * MILLIS_1_MINUTE;
+    private static final long MILLIS_20_MINUTES = 20 * MILLIS_1_MINUTE;
 
     public static String activityName = "";
     private static String triggerCause = "";
@@ -95,8 +110,8 @@ public class Plugin extends Aware_Plugin {
 
     private void registerEventListener() {
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_AWARE_CALL_ACCEPTED);
-        intentFilter.addAction(ACTION_AWARE_CALL_MADE);
+//        intentFilter.addAction(ACTION_AWARE_CALL_ACCEPTED);
+//        intentFilter.addAction(ACTION_AWARE_CALL_MADE);
         intentFilter.addAction(ACTION_AWARE_APPLICATIONS_FOREGROUND);
         intentFilter.addAction(ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION);
         // trigger for MWT
@@ -109,7 +124,7 @@ public class Plugin extends Aware_Plugin {
         registerReceiver(eventListener, intentFilter);
     }
 
-    private void scheduleMWTTrigger(final long millis) {
+    private void scheduleMWTTrigger(final long millis, final String triggerCause) {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
@@ -366,6 +381,11 @@ public class Plugin extends Aware_Plugin {
         private static final String TAG_AWARE_MWT = "AWARE::MWT";
         private final Plugin plugin;
 
+        private int lastActivity = ACTIVITY_CODE_STILL;
+        private int currentActivity = ACTIVITY_CODE_STILL;
+
+        private boolean activityChanged = false;
+
         private long lastAppChangeMillis = 0L;
         private long lastActivityChangeMillis = 0L;
 
@@ -388,65 +408,174 @@ public class Plugin extends Aware_Plugin {
                 }
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] " + trigger);
 
-                triggerCause = trigger;
                 long initDelayMillis = intent.getLongExtra(ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS, 0);
-                plugin.scheduleMWTTrigger(initDelayMillis);
+                triggerCause = trigger;
+                plugin.scheduleMWTTrigger(initDelayMillis, triggerCause);
             }
         }
 
         private void detectMwt(Intent intent) {
             String action = intent.getAction();
 
-            boolean expectedActivity = false;
+            long currentTimeMillis = System.currentTimeMillis();
+
+            if (ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action) || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)) {
+                lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
+            }
 
             if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equalsIgnoreCase(action)) {
                 int activity = intent.getIntExtra("activity", ACTIVITY_CODE_UNKNOWN);
                 int confidence = intent.getIntExtra("confidence", 0);
                 String newActivityName = Plugin.getActivityName(activity);
                 Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + newActivityName + ", " + confidence);
-                if (!newActivityName.equals(activityName) && confidence > 60) {
-                    expectedActivity = activity == ACTIVITY_CODE_IN_VEHICLE || activity == ACTIVITY_CODE_STILL || activity == ACTIVITY_CODE_WALKING;
+
+                Toast.makeText(plugin.getApplicationContext(), newActivityName + ", " + confidence, Toast.LENGTH_SHORT).show();
+
+                if (!newActivityName.equalsIgnoreCase(activityName) && confidence > 60) {
+                    lastActivity = getActivityCode(activityName);
+                    currentActivity = activity;
+                    lastActivityChangeMillis = currentTimeMillis;
+
                     activityName = newActivityName;
-                    lastActivityChangeMillis = System.currentTimeMillis();
+                    activityChanged = true;
                 }
             }
-            if (expectedActivity && System.currentTimeMillis() - lastActivityChangeMillis > 20000L) {
-                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Activity:" + activityName);
-                triggerCause = MWT_TRIGGER_ACTIVITY_CHANGE;
-                plugin.scheduleMWTTrigger(5000L);
+
+            if (isStillOrWalking(lastActivity) && isInVehicle(currentActivity)) {
+                if (activityChanged) {
+                    if (currentTimeMillis - lastActivityChangeMillis > MILLIS_30_SECONDS + getRandomMillis(MILLIS_90_SECONDS)) {
+                        Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
+                        triggerCause = MWT_TRIGGER_VEHICLE;
+                        plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+
+                        activityChanged = false;
+                    }
+                } else {
+                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES) {
+                        triggerCause = MWT_TRIGGER_VEHICLE;
+                        plugin.scheduleMWTTrigger(getRandomMillis(MILLIS_1_MINUTE), triggerCause);
+                    } else {
+                        if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                            triggerCause = MWT_TRIGGER_VEHICLE;
+                            plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+                        }
+                    }
+                }
             }
 
-            boolean expectedApp = false;
+            if (isStill(lastActivity) && isWalking(currentActivity)) {
+                if (activityChanged) {
+                    if (currentTimeMillis - lastActivityChangeMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_2_MINUTES)) {
+                        Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
+                        triggerCause = MWT_TRIGGER_WALKING;
+                        plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+
+                        activityChanged = false;
+                    }
+                } else {
+                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES) {
+                        triggerCause = MWT_TRIGGER_WALKING;
+                        plugin.scheduleMWTTrigger(getRandomMillis(MILLIS_1_MINUTE), triggerCause);
+                    } else {
+                        if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                            triggerCause = MWT_TRIGGER_WALKING;
+                            plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+                        }
+                    }
+                }
+            }
 
             if (ACTION_AWARE_APPLICATIONS_FOREGROUND.equalsIgnoreCase(action)) {
                 ContentValues contentValues = intent.getParcelableExtra(EXTRA_DATA);
                 Log.d(TAG_AWARE_MWT, "[MWT] App: " + contentValues.toString());
 
                 String currentPackageName = contentValues.getAsString(PACKAGE_NAME);
-                expectedApp = isExpectedSocialMediaPackage(currentPackageName);
 
                 if (!packageName.equals(currentPackageName)) {
                     packageName = currentPackageName;
                     lastAppChangeMillis = System.currentTimeMillis();
                 }
             }
-            if (expectedApp && System.currentTimeMillis() - lastAppChangeMillis > 60000L) {
-                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] App");
-                triggerCause = MWT_TRIGGER_SOCIAL_MEDIA;
-                plugin.scheduleMWTTrigger(10000L);
-            }
 
-            if (ACTION_AWARE_CALL_ACCEPTED.equalsIgnoreCase(action) || ACTION_AWARE_CALL_MADE.equalsIgnoreCase(action)) {
-                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
-                triggerCause = MWT_TRIGGER_AFTER_CALL;
-                plugin.scheduleMWTTrigger(5000L);
-            }
 
-            if(ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action) || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)){
-                lastEsmAnsweredOrDismissedMillis = System.currentTimeMillis();
-            }
+//            boolean expectedActivity = false;
+//
+//            if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equalsIgnoreCase(action)) {
+//                int activity = intent.getIntExtra("activity", ACTIVITY_CODE_UNKNOWN);
+//                int confidence = intent.getIntExtra("confidence", 0);
+//                String newActivityName = Plugin.getActivityName(activity);
+//                Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + newActivityName + ", " + confidence);
+//                if (!newActivityName.equals(activityName) && confidence > 60) {
+//                    expectedActivity = activity == ACTIVITY_CODE_IN_VEHICLE || activity == ACTIVITY_CODE_STILL || activity == ACTIVITY_CODE_WALKING;
+//                    activityName = newActivityName;
+//                    lastActivityChangeMillis = System.currentTimeMillis();
+//                }
+//            }
+//            if (expectedActivity && System.currentTimeMillis() - lastActivityChangeMillis > 20000L) {
+//                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Activity:" + activityName);
+//                triggerCause = MWT_TRIGGER_ACTIVITY_CHANGE;
+//                plugin.scheduleMWTTrigger(5000L);
+//            }
+//
+//            boolean expectedApp = false;
+//
+//            if (ACTION_AWARE_APPLICATIONS_FOREGROUND.equalsIgnoreCase(action)) {
+//                ContentValues contentValues = intent.getParcelableExtra(EXTRA_DATA);
+//                Log.d(TAG_AWARE_MWT, "[MWT] App: " + contentValues.toString());
+//
+//                String currentPackageName = contentValues.getAsString(PACKAGE_NAME);
+//                expectedApp = isExpectedSocialMediaPackage(currentPackageName);
+//
+//                if (!packageName.equals(currentPackageName)) {
+//                    packageName = currentPackageName;
+//                    lastAppChangeMillis = System.currentTimeMillis();
+//                }
+//            }
+//            if (expectedApp && System.currentTimeMillis() - lastAppChangeMillis > 60000L) {
+//                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] App");
+//                triggerCause = MWT_TRIGGER_SOCIAL_MEDIA;
+//                plugin.scheduleMWTTrigger(10000L);
+//            }
+//
+//            if (ACTION_AWARE_CALL_ACCEPTED.equalsIgnoreCase(action) || ACTION_AWARE_CALL_MADE.equalsIgnoreCase(action)) {
+//                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
+//                triggerCause = MWT_TRIGGER_AFTER_CALL;
+//                plugin.scheduleMWTTrigger(5000L);
+//            }
+
         }
 
+
+    }
+
+    private static boolean isStillOrWalking(int activityCode) {
+        return isStill(activityCode) || isWalking(activityCode);
+    }
+
+    private static boolean isInVehicle(int activityCode) {
+        return activityCode == ACTIVITY_CODE_IN_VEHICLE;
+    }
+
+    private static boolean isStill(int activityCode) {
+        return activityCode == ACTIVITY_CODE_STILL
+                || activityCode == ACTIVITY_CODE_TILTING;
+    }
+
+    private static boolean isWalking(int activityCode) {
+        return activityCode == ACTIVITY_CODE_WALKING
+                || activityCode == ACTIVITY_CODE_ON_FOOT;
+    }
+
+    private static long getRandomMillis(long duration) {
+        if (duration <= 0) {
+            return 0;
+        }
+
+        if (duration > Integer.MAX_VALUE) {
+            return 1 + (new Random().nextLong() % duration);
+        } else {
+            return 1 + new Random().nextInt((int) duration);
+        }
     }
 
     private static boolean isExpectedSocialMediaPackage(String currentPackageName) {
@@ -483,6 +612,27 @@ public class Plugin extends Aware_Plugin {
             case ACTIVITY_CODE_UNKNOWN:
             default:
                 return "unknown";
+        }
+    }
+
+    private static int getActivityCode(String name) {
+        switch (name) {
+            case "still":
+                return ACTIVITY_CODE_STILL;
+            case "walking":
+                return ACTIVITY_CODE_WALKING;
+            case "on_foot":
+                return ACTIVITY_CODE_ON_FOOT;
+            case "on_vehicle":
+                return ACTIVITY_CODE_IN_VEHICLE;
+            case "tilting":
+                return ACTIVITY_CODE_TILTING;
+            case "running":
+                return ACTIVITY_CODE_RUNNING;
+            case "on_bicycle":
+                return ACTIVITY_CODE_ON_BICYCLE;
+            default:
+                return ACTIVITY_CODE_UNKNOWN;
         }
     }
 
