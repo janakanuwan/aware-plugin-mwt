@@ -656,12 +656,15 @@ public class Plugin extends Aware_Plugin {
 
         private static final int MAX_PRESSURE_BUFFER_SIZE = 256;
 
-        private static final float DELTA = 10;
-        private static final int THRESHOLD = 20;
+        private static final float DELTA = 1.0f;
+        private static final int THRESHOLD = 1;
+        private static final int MAX_PRESSURE_DIFF = 500;
 
         private final float[] pressureValues = new float[MAX_PRESSURE_BUFFER_SIZE];
         private int index = 0;
         private final Plugin plugin;
+
+        private int diffTot = 0;
 
         private BarometerListener(Plugin plugin) {
             this.plugin = plugin;
@@ -674,19 +677,19 @@ public class Plugin extends Aware_Plugin {
             }
             pressureValues[index] = data.getAsFloat(AMBIENT_PRESSURE);
 
-            Log.d(TAG_AWARE_MWT, "Pressure: " + pressureValues[index]);
-            if (isEscalator(index, pressureValues)) {
+            if (isEscalator(index)) {
                 plugin.sendBroadcast(new Intent(ACTION_AWARE_ACTIVITY_ESCALATOR));
             }
             index++;
         }
 
-        private static boolean isEscalator(int index, float[] pressureValues) {
+        private boolean isEscalator(int index) {
             int current = index;
-            int diffTot = 0;
+
+            int tot = 0;
 
             int iteration = 0;
-            while (iteration < MAX_PRESSURE_BUFFER_SIZE - 1) {
+            while (iteration < MAX_PRESSURE_BUFFER_SIZE) {
                 float diff;
                 if (current > 1) {
                     diff = pressureValues[current] - pressureValues[current - 1];
@@ -698,15 +701,24 @@ public class Plugin extends Aware_Plugin {
                 }
                 current--;
 
-                if (diff > DELTA) {
-                    diffTot++;
-                } else if (diff < DELTA) {
-                    diffTot--;
+
+                if (diff > DELTA && diff < MAX_PRESSURE_DIFF) {
+                    tot++;
+                } else if (diff < -DELTA && diff > -MAX_PRESSURE_DIFF) {
+                    tot--;
                 }
                 iteration++;
+
+                if (diff > DELTA || diff < -DELTA) {
+                    Log.d(TAG_AWARE_MWT, "Delta: " + diff);
+                }
             }
 
-            return diffTot > THRESHOLD || diffTot < -THRESHOLD;
+            diffTot += tot;
+            diffTot /= 2;
+            Log.d(TAG_AWARE_MWT, "Diff Tot:" + tot);
+
+            return diffTot >= THRESHOLD || diffTot <= -THRESHOLD;
         }
     }
 
