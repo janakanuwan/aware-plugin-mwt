@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
+import com.aware.Barometer;
 import com.aware.ESM;
 import com.aware.ui.esms.ESMFactory;
 import com.aware.ui.esms.ESM_Checkbox;
@@ -70,6 +71,9 @@ public class Plugin extends Aware_Plugin {
     private static final String ACTION_AWARE_ESM_ANSWERED = "ACTION_AWARE_ESM_ANSWERED";
     private static final String ACTION_AWARE_ESM_DISMISSED = "ACTION_AWARE_ESM_DISMISSED";
 
+    private static final String ACTION_AWARE_ACTIVITY_ESCALATOR = "ACTION_AWARE_ACTIVITY_ESCALATOR";
+    private static final String AMBIENT_PRESSURE = "double_values_0";
+
     private static final String APPLICATION_NAME = "application_name";
     private static final String EXTRA_ACTIVITY = "activity";
     private static final String EXTRA_CONFIDENCE = "confidence";
@@ -107,6 +111,7 @@ public class Plugin extends Aware_Plugin {
     private static long lastEsmAnsweredOrDismissedMillis;
 
     private MwtListener eventListener;
+    private BarometerListener barometerListener;
 
     private void registerEventListener() {
         IntentFilter intentFilter = new IntentFilter();
@@ -116,12 +121,16 @@ public class Plugin extends Aware_Plugin {
         intentFilter.addAction(ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION);
         // trigger for MWT
         intentFilter.addAction(ACTION_AWARE_MWT_TRIGGER);
-        // listen to answers or dismiss
+        // listen to ESM answers or dismiss
         intentFilter.addAction(ACTION_AWARE_ESM_ANSWERED);
         intentFilter.addAction(ACTION_AWARE_ESM_DISMISSED);
+        intentFilter.addAction(ACTION_AWARE_ACTIVITY_ESCALATOR);
 
         eventListener = new MwtListener(this);
         registerReceiver(eventListener, intentFilter);
+
+        barometerListener = new BarometerListener(this);
+        Barometer.setSensorObserver(barometerListener);
     }
 
     private void scheduleMWTTrigger(final long millis, final String triggerCause) {
@@ -155,6 +164,9 @@ public class Plugin extends Aware_Plugin {
     private void unregisterEventListener() {
         unregisterReceiver(this.eventListener);
         this.eventListener = null;
+
+        Barometer.setSensorObserver(null);
+        this.barometerListener = null;
     }
 
     public void onCreate() {
@@ -452,10 +464,12 @@ public class Plugin extends Aware_Plugin {
                     }
                 } else {
                     if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES) {
+                        Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         triggerCause = MWT_TRIGGER_VEHICLE;
                         plugin.scheduleMWTTrigger(getRandomMillis(MILLIS_1_MINUTE), triggerCause);
                     } else {
                         if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
                             triggerCause = MWT_TRIGGER_VEHICLE;
                             plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                         }
@@ -474,10 +488,12 @@ public class Plugin extends Aware_Plugin {
                     }
                 } else {
                     if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES) {
+                        Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         triggerCause = MWT_TRIGGER_WALKING;
                         plugin.scheduleMWTTrigger(getRandomMillis(MILLIS_1_MINUTE), triggerCause);
                     } else {
                         if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
                             triggerCause = MWT_TRIGGER_WALKING;
                             plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                         }
@@ -544,7 +560,6 @@ public class Plugin extends Aware_Plugin {
 //            }
 
         }
-
 
     }
 
@@ -633,6 +648,65 @@ public class Plugin extends Aware_Plugin {
                 return ACTIVITY_CODE_ON_BICYCLE;
             default:
                 return ACTIVITY_CODE_UNKNOWN;
+        }
+    }
+
+    private static class BarometerListener implements Barometer.AWARESensorObserver {
+        private static final String TAG_AWARE_MWT = "AWARE::MWT";
+
+        private static final int MAX_PRESSURE_BUFFER_SIZE = 256;
+
+        private static final float DELTA = 10;
+        private static final int THRESHOLD = 20;
+
+        private final float[] pressureValues = new float[MAX_PRESSURE_BUFFER_SIZE];
+        private int index = 0;
+        private final Plugin plugin;
+
+        private BarometerListener(Plugin plugin) {
+            this.plugin = plugin;
+        }
+
+        @Override
+        public synchronized void onBarometerChanged(ContentValues data) {
+            if (index >= MAX_PRESSURE_BUFFER_SIZE) {
+                index = 0;
+            }
+            pressureValues[index] = data.getAsFloat(AMBIENT_PRESSURE);
+
+            Log.d(TAG_AWARE_MWT, "Pressure: " + pressureValues[index]);
+            if (isEscalator(index, pressureValues)) {
+                plugin.sendBroadcast(new Intent(ACTION_AWARE_ACTIVITY_ESCALATOR));
+            }
+            index++;
+        }
+
+        private static boolean isEscalator(int index, float[] pressureValues) {
+            int current = index;
+            int diffTot = 0;
+
+            int iteration = 0;
+            while (iteration < MAX_PRESSURE_BUFFER_SIZE - 1) {
+                float diff;
+                if (current > 1) {
+                    diff = pressureValues[current] - pressureValues[current - 1];
+                } else if (current == 0) {
+                    diff = pressureValues[0] - pressureValues[MAX_PRESSURE_BUFFER_SIZE - 1];
+                } else {
+                    current = MAX_PRESSURE_BUFFER_SIZE - 1;
+                    diff = pressureValues[current] - pressureValues[current - 1];
+                }
+                current--;
+
+                if (diff > DELTA) {
+                    diffTot++;
+                } else if (diff < DELTA) {
+                    diffTot--;
+                }
+                iteration++;
+            }
+
+            return diffTot > THRESHOLD || diffTot < -THRESHOLD;
         }
     }
 
