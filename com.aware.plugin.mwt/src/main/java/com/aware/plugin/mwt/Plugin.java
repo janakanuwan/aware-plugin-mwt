@@ -93,7 +93,8 @@ public class Plugin extends Aware_Plugin {
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
 
-    private static final long MILLIS_IMMEDIATELY = 1L;
+    private static final long MILLIS_IMMEDIATELY = 0;
+    private static final long MILLIS_ASAP = 1;
     private static final long MILLIS_1_SECOND = 1000L;
     private static final long MILLIS_30_SECONDS = 30 * MILLIS_1_SECOND;
     private static final long MILLIS_90_SECONDS = 90 * MILLIS_1_SECOND;
@@ -458,20 +459,20 @@ public class Plugin extends Aware_Plugin {
                     if (currentTimeMillis - lastActivityChangeMillis > MILLIS_30_SECONDS + getRandomMillis(MILLIS_90_SECONDS)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
                         triggerCause = MWT_TRIGGER_VEHICLE;
-                        plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+                        plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
 
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES) {
+                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         triggerCause = MWT_TRIGGER_VEHICLE;
-                        plugin.scheduleMWTTrigger(getRandomMillis(MILLIS_1_MINUTE), triggerCause);
+                        plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
                         if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
                             Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
                             triggerCause = MWT_TRIGGER_VEHICLE;
-                            plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+                            plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                         }
                     }
                 }
@@ -482,20 +483,20 @@ public class Plugin extends Aware_Plugin {
                     if (currentTimeMillis - lastActivityChangeMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_2_MINUTES)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
                         triggerCause = MWT_TRIGGER_WALKING;
-                        plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+                        plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
 
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES) {
+                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         triggerCause = MWT_TRIGGER_WALKING;
-                        plugin.scheduleMWTTrigger(getRandomMillis(MILLIS_1_MINUTE), triggerCause);
+                        plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
                         if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
                             Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
                             triggerCause = MWT_TRIGGER_WALKING;
-                            plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+                            plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                         }
                     }
                 }
