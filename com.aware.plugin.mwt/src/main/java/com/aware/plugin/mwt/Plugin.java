@@ -66,6 +66,9 @@ public class Plugin extends Aware_Plugin {
     private static final String ACTION_AWARE_USER_IN_CALL = "ACTION_AWARE_USER_IN_CALL";
     private static final String ACTION_AWARE_USER_NOT_IN_CALL = "ACTION_AWARE_USER_NOT_IN_CALL";
 
+    private static final String ACTION_AWARE_ESM_ANSWERED = "ACTION_AWARE_ESM_ANSWERED";
+    private static final String ACTION_AWARE_ESM_DISMISSED = "ACTION_AWARE_ESM_DISMISSED";
+
     private static final String APPLICATION_NAME = "application_name";
     private static final String EXTRA_ACTIVITY = "activity";
     private static final String EXTRA_CONFIDENCE = "confidence";
@@ -86,6 +89,7 @@ public class Plugin extends Aware_Plugin {
     private static String triggerCause = "";
     private static String packageName = "";
     private static long lastEsmMillis;
+    private static long lastEsmAnsweredOrDismissedMillis;
 
     private MwtListener eventListener;
 
@@ -97,6 +101,9 @@ public class Plugin extends Aware_Plugin {
         intentFilter.addAction(ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION);
         // trigger for MWT
         intentFilter.addAction(ACTION_AWARE_MWT_TRIGGER);
+        // listen to answers or dismiss
+        intentFilter.addAction(ACTION_AWARE_ESM_ANSWERED);
+        intentFilter.addAction(ACTION_AWARE_ESM_DISMISSED);
 
         eventListener = new MwtListener(this);
         registerReceiver(eventListener, intentFilter);
@@ -374,7 +381,7 @@ public class Plugin extends Aware_Plugin {
                 detectMwt(intent);
             }
 
-            if (ACTION_AWARE_MWT_TRIGGER.equals(action)) {
+            if (ACTION_AWARE_MWT_TRIGGER.equalsIgnoreCase(action)) {
                 String trigger = intent.getStringExtra(ACTION_AWARE_MWT_TRIGGER_CAUSE);
                 if (trigger == null) {
                     trigger = MWT_TRIGGER_MANUAL;
@@ -392,9 +399,9 @@ public class Plugin extends Aware_Plugin {
 
             boolean expectedActivity = false;
 
-            if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equals(action)) {
+            if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equalsIgnoreCase(action)) {
                 int activity = intent.getIntExtra("activity", ACTIVITY_CODE_UNKNOWN);
-                int confidence = intent.getIntExtra("confidence", ACTIVITY_CODE_UNKNOWN);
+                int confidence = intent.getIntExtra("confidence", 0);
                 String newActivityName = Plugin.getActivityName(activity);
                 Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + newActivityName + ", " + confidence);
                 if (!newActivityName.equals(activityName) && confidence > 60) {
@@ -411,7 +418,7 @@ public class Plugin extends Aware_Plugin {
 
             boolean expectedApp = false;
 
-            if (ACTION_AWARE_APPLICATIONS_FOREGROUND.equals(action)) {
+            if (ACTION_AWARE_APPLICATIONS_FOREGROUND.equalsIgnoreCase(action)) {
                 ContentValues contentValues = intent.getParcelableExtra(EXTRA_DATA);
                 Log.d(TAG_AWARE_MWT, "[MWT] App: " + contentValues.toString());
 
@@ -429,10 +436,14 @@ public class Plugin extends Aware_Plugin {
                 plugin.scheduleMWTTrigger(10000L);
             }
 
-            if (ACTION_AWARE_CALL_ACCEPTED.equals(action) || ACTION_AWARE_CALL_MADE.equals(action)) {
+            if (ACTION_AWARE_CALL_ACCEPTED.equalsIgnoreCase(action) || ACTION_AWARE_CALL_MADE.equalsIgnoreCase(action)) {
                 Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
                 triggerCause = MWT_TRIGGER_AFTER_CALL;
                 plugin.scheduleMWTTrigger(5000L);
+            }
+
+            if(ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action) || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)){
+                lastEsmAnsweredOrDismissedMillis = System.currentTimeMillis();
             }
         }
 
