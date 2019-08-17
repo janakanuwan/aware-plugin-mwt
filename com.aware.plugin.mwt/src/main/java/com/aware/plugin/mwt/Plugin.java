@@ -89,6 +89,7 @@ public class Plugin extends Aware_Plugin {
 
     private static final String MWT_TRIGGER_WALKING = "TRIGGER_WALKING";
     private static final String MWT_TRIGGER_VEHICLE = "TRIGGER_VEHICLE";
+    private static final String MWT_TRIGGER_ESCALATOR = "TRIGGER_ESCALATOR";
 
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
@@ -96,6 +97,7 @@ public class Plugin extends Aware_Plugin {
     private static final long MILLIS_IMMEDIATELY = 0;
     private static final long MILLIS_ASAP = 1;
     private static final long MILLIS_1_SECOND = 1000L;
+    private static final long MILLIS_20_SECONDS = 20 * MILLIS_1_SECOND;
     private static final long MILLIS_30_SECONDS = 30 * MILLIS_1_SECOND;
     private static final long MILLIS_90_SECONDS = 90 * MILLIS_1_SECOND;
     private static final long MILLIS_1_MINUTE = 60 * MILLIS_1_SECOND;
@@ -401,6 +403,7 @@ public class Plugin extends Aware_Plugin {
 
         private long lastAppChangeMillis = 0L;
         private long lastActivityChangeMillis = 0L;
+        private long lastEscalatorTime = 0L;
 
         private MwtListener(Plugin plugin) {
             this.plugin = plugin;
@@ -431,6 +434,16 @@ public class Plugin extends Aware_Plugin {
             String action = intent.getAction();
 
             long currentTimeMillis = System.currentTimeMillis();
+
+            if (ACTION_AWARE_ACTIVITY_ESCALATOR.equalsIgnoreCase(action)) {
+                if (currentTimeMillis - lastEscalatorTime < MILLIS_20_SECONDS) {
+                    return;
+                }
+                lastEscalatorTime = currentTimeMillis;
+                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Escalator");
+                triggerCause = MWT_TRIGGER_ESCALATOR;
+                plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
+            }
 
             if (ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action) || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)) {
                 lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
@@ -510,7 +523,7 @@ public class Plugin extends Aware_Plugin {
 
                 if (!packageName.equals(currentPackageName)) {
                     packageName = currentPackageName;
-                    lastAppChangeMillis = System.currentTimeMillis();
+                    lastAppChangeMillis = currentTimeMillis;
                 }
             }
 
