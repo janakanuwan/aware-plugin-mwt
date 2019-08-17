@@ -36,7 +36,8 @@ repositories {
 }
 
 dependencies {
-    implementation "com.android.support:design:$support_libs"
+//    implementation "com.android.support:design:$support_libs"
+    implementation "androidx.appcompat:appcompat:1.0.2"
     api project(":aware-core")
 //    api "com.github.denzilferreira:aware-client:$aware_libs"
 }
