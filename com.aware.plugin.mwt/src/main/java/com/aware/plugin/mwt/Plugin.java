@@ -70,6 +70,7 @@ public class Plugin extends Aware_Plugin {
 
     private static final String ACTION_AWARE_ESM_ANSWERED = "ACTION_AWARE_ESM_ANSWERED";
     private static final String ACTION_AWARE_ESM_DISMISSED = "ACTION_AWARE_ESM_DISMISSED";
+    private static final String ACTION_AWARE_ESM_EXPIRED = "ACTION_AWARE_ESM_EXPIRED";
 
     private static final String ACTION_AWARE_ACTIVITY_ESCALATOR = "ACTION_AWARE_ACTIVITY_ESCALATOR";
     private static final String AMBIENT_PRESSURE = "double_values_0";
@@ -127,6 +128,8 @@ public class Plugin extends Aware_Plugin {
         // listen to ESM answers or dismiss
         intentFilter.addAction(ACTION_AWARE_ESM_ANSWERED);
         intentFilter.addAction(ACTION_AWARE_ESM_DISMISSED);
+        intentFilter.addAction(ACTION_AWARE_ESM_EXPIRED);
+
         intentFilter.addAction(ACTION_AWARE_ACTIVITY_ESCALATOR);
 
         eventListener = new MwtListener(this);
@@ -445,7 +448,8 @@ public class Plugin extends Aware_Plugin {
                 plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
             }
 
-            if (ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action) || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)) {
+            if (ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action)
+                    || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)) {
                 lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
             }
 
@@ -479,6 +483,7 @@ public class Plugin extends Aware_Plugin {
                 } else {
                     if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
+                        lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_VEHICLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
@@ -503,6 +508,7 @@ public class Plugin extends Aware_Plugin {
                 } else {
                     if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
+                        lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_WALKING;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
