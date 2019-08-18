@@ -399,13 +399,13 @@ public class Plugin extends Aware_Plugin {
         private static final String TAG_AWARE_MWT = "AWARE::MWT";
         private final Plugin plugin;
 
-        private int lastActivity = ACTIVITY_CODE_STILL;
-        private int currentActivity = ACTIVITY_CODE_STILL;
+        private static int lastActivity = ACTIVITY_CODE_UNKNOWN;
+        private static int currentActivity = ACTIVITY_CODE_UNKNOWN;
 
         private boolean activityChanged = false;
 
         private long lastAppChangeMillis = 0L;
-        private long lastActivityChangeMillis = 0L;
+        private static long lastActivityChangeMillis = 0L;
         private long lastEscalatorTime = 0L;
 
         private MwtListener(Plugin plugin) {
