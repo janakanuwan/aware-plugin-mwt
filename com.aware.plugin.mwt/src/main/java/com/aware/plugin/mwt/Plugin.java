@@ -37,6 +37,7 @@ import java.util.TimerTask;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Plugin extends Aware_Plugin {
 
@@ -108,11 +109,14 @@ public class Plugin extends Aware_Plugin {
     private static final long MILLIS_10_MINUTES = 10 * MILLIS_1_MINUTE;
     private static final long MILLIS_20_MINUTES = 20 * MILLIS_1_MINUTE;
 
+    private static final int MAX_ESM_COUNT_PER_DAY = 12;
+
     public static String activityName = "";
     private static String triggerCause = "";
     private static String packageName = "";
     private static volatile long lastEsmMillis;
     private static volatile long lastEsmAnsweredOrDismissedMillis;
+    private static AtomicInteger esmAnsweredOrDismissedCount = new AtomicInteger(0);
 
     private MwtListener eventListener;
     private BarometerListener barometerListener;
@@ -143,12 +147,14 @@ public class Plugin extends Aware_Plugin {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
-                if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow()) {
-                    Log.i(TAG, "[MWT ESM] Start: " + now + ", cause: " + triggerCause);
+                if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow() && esmAnsweredOrDismissedCount.get() < MAX_ESM_COUNT_PER_DAY) {
+                    Log.i(TAG, "[MWT ESM] Start: " + now + ", cause: " + triggerCause + ", esmCount: " + esmAnsweredOrDismissedCount);
                     lastEsmMillis = now;
                     lastEsmAnsweredOrDismissedMillis = now;
                     CONTEXT_PRODUCER.onContext();
                     startESM(triggerCause);
+                } else if (!isCorrectDurationNow()) {
+                    esmAnsweredOrDismissedCount.set(0);
                 }
             }
         }, millis);
@@ -440,6 +446,7 @@ public class Plugin extends Aware_Plugin {
             long currentTimeMillis = System.currentTimeMillis();
 
             if (ACTION_AWARE_ACTIVITY_ESCALATOR.equalsIgnoreCase(action)) {
+                Toast.makeText(plugin.getApplicationContext(), "Escalator Detected", Toast.LENGTH_SHORT).show();
                 if (currentTimeMillis - lastEscalatorTime < MILLIS_20_SECONDS) {
                     return;
                 }
@@ -452,6 +459,7 @@ public class Plugin extends Aware_Plugin {
             if (ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action)
                     || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)) {
                 lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
+                esmAnsweredOrDismissedCount.getAndIncrement();
             }
 
             if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equalsIgnoreCase(action)) {
@@ -460,7 +468,7 @@ public class Plugin extends Aware_Plugin {
                 String newActivityName = Plugin.getActivityName(activity);
                 Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + newActivityName + ", " + confidence);
 
-                Toast.makeText(plugin.getApplicationContext(), newActivityName + ", " + confidence, Toast.LENGTH_SHORT).show();
+                Toast.makeText(plugin.getApplicationContext(), newActivityName + ", " + confidence, Toast.LENGTH_LONG).show();
 
                 if (!newActivityName.equalsIgnoreCase(activityName) && confidence > 60) {
                     lastActivity = getActivityCode(activityName);
@@ -482,7 +490,7 @@ public class Plugin extends Aware_Plugin {
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
+                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_VEHICLE;
@@ -737,7 +745,7 @@ public class Plugin extends Aware_Plugin {
 
             diffTot += tot;
             diffTot /= 2;
-            Log.d(TAG_AWARE_MWT, "Diff Tot:" + tot);
+//            Log.d(TAG_AWARE_MWT, "Diff Tot:" + tot);
 
             return diffTot >= THRESHOLD || diffTot <= -THRESHOLD;
         }
