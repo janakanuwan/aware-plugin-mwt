@@ -19,6 +19,7 @@ import com.aware.ESM;
 import com.aware.ui.esms.ESMFactory;
 import com.aware.ui.esms.ESM_Checkbox;
 import com.aware.ui.esms.ESM_Likert;
+import com.aware.ui.esms.ESM_Number;
 import com.aware.ui.esms.ESM_PAM;
 import com.aware.ui.esms.ESM_Radio;
 import com.aware.utils.Aware_Plugin;
@@ -982,6 +983,323 @@ public class Plugin extends Aware_Plugin {
 
         return eSMFactory.build();
     }
+
+    private static String getEsmQuestionnaire(String trigger, int emsExpirationThresholdInSeconds) throws JSONException {
+        ESMFactory esmFactory = new ESMFactory();
+
+        ESM_Likert languageReceptivityLikert = new ESM_Likert();
+        languageReceptivityLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Receptivity to Learn")
+                .setInstructions("How interested you are in learning a new language (vocabulary) now?")
+                .setSubmitButton("Next")
+                .setTrigger(trigger)
+                .setExpirationThreshold(emsExpirationThresholdInSeconds)
+                .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
+
+        ESM_Radio commutingMediumRadio = new ESM_Radio();
+        commutingMediumRadio
+                .addRadio("By Bus")
+                .addRadio("By Taxi")
+                .addRadio("By MRT/Train")
+                .addRadio("Riding a bike / driving")
+                .addRadio("Riding a bike / driving")
+                .addRadio("Taking the lift / elevator")
+                .addRadio("None (Not Commuting)r")
+                .addRadio("Other")
+                .setTitle("Commuting Medium")
+                .setInstructions("What's the medium of commuting?")
+                .setSubmitButton("OK");
+//
+//        ESM_Radio primaryActivityRadio = new ESM_Radio();
+//        primaryActivityRadio
+//                .addRadio("Commuting (e.g. walking/bus/lift)")
+//                .addRadio("Waiting")
+//                .addRadio("Relaxing")
+//                .addRadio("Conversing (e.g. talk/call/chat)")
+//                .addRadio("Consuming")
+//                .addRadio("Working/Studying")
+//                .addRadio("Exercising")
+//                .addRadio("Observing/Exploring")
+//                .addRadio("Other")
+//                .addFlow("Commuting (e.g. walking/bus/lift)", commutingMediumRadio.build())
+//                .addFlow("Waiting", waitingCategoryRadio.build())
+//                .addFlow("Waiting", waitingTimeRadio.build())
+//                .addFlow("Relaxing", relaxingCategoryRadio.build())
+//                .addFlow("Conversing (e.g. talk/call/chat)", conversingMediumRadio.build())
+//                .setTitle("Primary Activity")
+//                .setInstructions("What is the MAIN activity you are doing now?")
+//                .setSubmitButton("Next");
+
+        return esmFactory.build();
+    }
+
+    private static void addTransportationQuestions(ESMFactory esmFactory) throws JSONException {
+        ESM_Number expectedTimeNumeric = new ESM_Number();
+        expectedTimeNumeric.setTitle("Expected Time: Transportation")
+                .setInstructions("How long (minutes) do you think it will take for you to get off")
+                .setSubmitButton("Next");
+
+        esmFactory.addESM(expectedTimeNumeric);
+    }
+
+    private static void addWaitingQuestions(ESMFactory esmFactory) throws JSONException{
+        ESM_Likert languageReceptivityLikert = new ESM_Likert();
+        languageReceptivityLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Receptivity to Learn: Waiting")
+                .setInstructions("How were you willing to learn new vocabulary when you were waiting?")
+                .setSubmitButton("Next");
+
+        ESM_Radio postureRadio = new ESM_Radio();
+        postureRadio
+                .addRadio("Moving (e.g. walking/running)")
+                .addRadio("Standing")
+                .addRadio("Sitting")
+                .addRadio("Lying")
+                .addRadio("Other")
+                .setTitle("Body Posture: Waiting")
+                .setInstructions("What's your posture then?")
+                .setSubmitButton("Next");
+        ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
+        visualAttentionConditionLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Visual Attention: Waiting")
+                .setInstructions("How much visual attention did you pay during waiting?")
+                .setSubmitButton("Next");
+        ESM_Radio socialContextRadio = new ESM_Radio();
+        socialContextRadio
+                .addRadio("Alone")
+                .addRadio("Family members")
+                .addRadio("Friends")
+                .addRadio("Strangers")
+                .addRadio("Other")
+                .setTitle("Social Context: Waiting")
+                .setInstructions("Who were you with during waiting?")
+                .setSubmitButton("Next");
+        ESM_Likert crowdLikert = new ESM_Likert();
+        crowdLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Crowded")
+                .setLikertMinLabel("Not Crowded")
+                .setLikertStep(1.0D)
+                .setTitle("Crowdedness: Waiting")
+                .setInstructions("How crowded was your surrounding during waiting?")
+                .setSubmitButton("Next");
+        ESM_Likert noiseLikert = new ESM_Likert();
+        noiseLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Noisy")
+                .setLikertMinLabel("Very Quiet")
+                .setLikertStep(1.0D)
+                .setTitle("Noisiness: Waiting")
+                .setInstructions("How noisy was your surrounding during waiting?")
+                .setSubmitButton("Next");
+        ESM_Likert temperatureLikert = new ESM_Likert();
+        temperatureLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Too Cold")
+                .setLikertMinLabel("Too Hot")
+                .setLikertStep(1.0D)
+                .setTitle("Temperature: Waiting")
+                .setInstructions("How cold/hot was your surrounding during waiting?")
+                .setSubmitButton("Next");
+        ESM_Number expectedTimeNumeric = new ESM_Number();
+        expectedTimeNumeric.setTitle("Expected Time: Waiting")
+                .setInstructions("How long (minutes) did you wait for transportation?")
+                .setSubmitButton("Next");
+
+        esmFactory.addESM(languageReceptivityLikert);
+        esmFactory.addESM(postureRadio);
+        esmFactory.addESM(visualAttentionConditionLikert);
+        esmFactory.addESM(socialContextRadio);
+        esmFactory.addESM(crowdLikert);
+        esmFactory.addESM(noiseLikert);
+        esmFactory.addESM(temperatureLikert);
+        esmFactory.addESM(expectedTimeNumeric);
+    }
+
+
+    private static void addWalkingQuestions(ESMFactory esmFactory) throws JSONException {
+        ESM_Likert urgencyLikert = new ESM_Likert();
+        urgencyLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Urgent")
+                .setLikertMinLabel("Not Urgent")
+                .setLikertStep(1.0D)
+                .setTitle("Urgency")
+                .setInstructions("How urgent it is for you to arrive your destination?")
+                .setSubmitButton("Next");
+        ESM_Number expectedTimeNumeric = new ESM_Number();
+        expectedTimeNumeric.setTitle("Expected Time: Walking")
+                .setInstructions("How long (minutes) do you think it will take for you to arrive at your destination?")
+                .setSubmitButton("Next");
+        ESM_Likert familiarityLikert = new ESM_Likert();
+        familiarityLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Familiarity")
+                .setInstructions("How familiar are you with the road?")
+                .setSubmitButton("Next");
+
+        esmFactory.addESM(urgencyLikert);
+        esmFactory.addESM(expectedTimeNumeric);
+        esmFactory.addESM(familiarityLikert);
+    }
+
+    private static void addEscalatorQuestions(ESMFactory esmFactory) throws JSONException {
+        ESM_Likert urgencyLikert = new ESM_Likert();
+        urgencyLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Urgent")
+                .setLikertMinLabel("Not Urgent")
+                .setLikertStep(1.0D)
+                .setTitle("Urgency")
+                .setInstructions("How urgent it is for you to arrive your destination?")
+                .setSubmitButton("Next");
+        ESM_Number expectedTimeNumeric = new ESM_Number();
+        expectedTimeNumeric.setTitle("Expected Time: Escalator")
+                .setInstructions("HHow long (minutes) do you think it will take for you to get off")
+                .setSubmitButton("Next");
+
+        esmFactory.addESM(urgencyLikert);
+        esmFactory.addESM(expectedTimeNumeric);
+    }
+
+
+    private static void addCommonQuestions(ESMFactory esmFactory) throws JSONException {
+
+        // common
+        ESM_Radio postureRadio = new ESM_Radio();
+        postureRadio
+                .addRadio("Moving (e.g. walking/running)")
+                .addRadio("Standing")
+                .addRadio("Sitting")
+                .addRadio("Lying")
+                .addRadio("Other")
+                .setTitle("Body Posture")
+                .setInstructions("What's your posture?")
+                .setSubmitButton("Next");
+        ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
+        visualAttentionConditionLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Active")
+                .setLikertMinLabel("Very Tired")
+                .setLikertStep(1.0D)
+                .setTitle("Visual Attention")
+                .setInstructions("How much visual attention should you pay now?")
+                .setSubmitButton("Next");
+        ESM_Likert physicalConditionLikert = new ESM_Likert();
+        physicalConditionLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Active")
+                .setLikertMinLabel("Very Tired")
+                .setLikertStep(1.0D)
+                .setTitle("Physical Condition")
+                .setInstructions("What is your physical condition now?")
+                .setSubmitButton("Next");
+        ESM_PAM moodGrid = new ESM_PAM();
+        moodGrid
+                .setTitle("Mood")
+                .setInstructions("What is your mood right now? Choose the most appropriate image.")
+                .setSubmitButton("Next");
+        ESM_Radio socialContextRadio = new ESM_Radio();
+        socialContextRadio
+                .addRadio("Alone")
+                .addRadio("Family members")
+                .addRadio("Friends")
+                .addRadio("Strangers")
+                .addRadio("Other")
+                .setTitle("Social Context")
+                .setInstructions("Who are you with now?")
+                .setSubmitButton("Next");
+        ESM_Likert crowdLikert = new ESM_Likert();
+        crowdLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Crowded")
+                .setLikertMinLabel("Not Crowded")
+                .setLikertStep(1.0D)
+                .setTitle("Crowdedness")
+                .setInstructions("How crowded is your surrounding now?")
+                .setSubmitButton("Next");
+        ESM_Likert noiseLikert = new ESM_Likert();
+        noiseLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Noisy")
+                .setLikertMinLabel("Very Quiet")
+                .setLikertStep(1.0D)
+                .setTitle("Noisiness")
+                .setInstructions("How noisy is your surrounding now?")
+                .setSubmitButton("Next");
+        ESM_Likert temperatureLikert = new ESM_Likert();
+        temperatureLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Too Cold")
+                .setLikertMinLabel("Too Hot")
+                .setLikertStep(1.0D)
+                .setTitle("Temperature")
+                .setInstructions("How cold/hot is your surrounding now?")
+                .setSubmitButton("Next");
+
+        // filling
+        ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
+        fillingActivitiesCheckbox
+                .addCheck("Listening to music")
+                .addCheck("Conversing (face to face / chatting)")
+                .addCheck("Observing surrounding")
+                .addCheck("Using mobile for leisure")
+                .addCheck("Exploring or searching")
+                .addCheck("Reading")
+                .addCheck("Working/Studying")
+                .addCheck("Consuming")
+                .addCheck("Other")
+                .setTitle("Filling activities")
+                .setInstructions("What are your filling activities now?")
+                .setSubmitButton("Next");
+
+        ESM_Likert physicalDemandLikert = new ESM_Likert();
+        physicalDemandLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Physical Demand")
+                .setInstructions("How physically demanding are those filling activities?")
+                .setSubmitButton("Next");
+        ESM_Likert mentalDemandLikert = new ESM_Likert();
+        mentalDemandLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Mental Demand")
+                .setInstructions("How mentally demanding are those filling activities?")
+                .setSubmitButton("Next");
+
+        esmFactory.addESM(postureRadio);
+        esmFactory.addESM(visualAttentionConditionLikert);
+        esmFactory.addESM(physicalConditionLikert);
+        esmFactory.addESM(moodGrid);
+        esmFactory.addESM(socialContextRadio);
+        esmFactory.addESM(crowdLikert);
+        esmFactory.addESM(noiseLikert);
+        esmFactory.addESM(temperatureLikert);
+        esmFactory.addESM(fillingActivitiesCheckbox);
+        esmFactory.addESM(physicalDemandLikert);
+        esmFactory.addESM(mentalDemandLikert);
+    }
+
 
     private boolean shouldPingServer() {
         return Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_PING_SERVER).equals("true");
