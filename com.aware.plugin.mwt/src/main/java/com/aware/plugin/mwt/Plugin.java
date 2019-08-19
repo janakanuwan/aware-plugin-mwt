@@ -111,8 +111,8 @@ public class Plugin extends Aware_Plugin {
     public static String activityName = "";
     private static String triggerCause = "";
     private static String packageName = "";
-    private static long lastEsmMillis;
-    private static long lastEsmAnsweredOrDismissedMillis;
+    private static volatile long lastEsmMillis;
+    private static volatile long lastEsmAnsweredOrDismissedMillis;
 
     private MwtListener eventListener;
     private BarometerListener barometerListener;
@@ -146,6 +146,7 @@ public class Plugin extends Aware_Plugin {
                 if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow()) {
                     Log.i(TAG, "[MWT ESM] Start: " + now + ", cause: " + triggerCause);
                     lastEsmMillis = now;
+                    lastEsmAnsweredOrDismissedMillis = now;
                     CONTEXT_PRODUCER.onContext();
                     startESM(triggerCause);
                 }
