@@ -10,7 +10,6 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
@@ -20,7 +19,6 @@ import com.aware.ui.esms.ESMFactory;
 import com.aware.ui.esms.ESM_Checkbox;
 import com.aware.ui.esms.ESM_Likert;
 import com.aware.ui.esms.ESM_Number;
-import com.aware.ui.esms.ESM_PAM;
 import com.aware.ui.esms.ESM_Radio;
 import com.aware.utils.Aware_Plugin;
 
@@ -73,6 +71,7 @@ public class Plugin extends Aware_Plugin {
     private static final String ACTION_AWARE_ESM_ANSWERED = "ACTION_AWARE_ESM_ANSWERED";
     private static final String ACTION_AWARE_ESM_DISMISSED = "ACTION_AWARE_ESM_DISMISSED";
     private static final String ACTION_AWARE_ESM_EXPIRED = "ACTION_AWARE_ESM_EXPIRED";
+    private static final String ACTION_AWARE_ESM_QUEUE_STARTED = "ACTION_AWARE_ESM_QUEUE_STARTED";
 
     private static final String ACTION_AWARE_ACTIVITY_ESCALATOR = "ACTION_AWARE_ACTIVITY_ESCALATOR";
     private static final String AMBIENT_PRESSURE = "double_values_0";
@@ -112,7 +111,7 @@ public class Plugin extends Aware_Plugin {
     private static final long MILLIS_10_MINUTES = 10 * MILLIS_1_MINUTE;
     private static final long MILLIS_20_MINUTES = 20 * MILLIS_1_MINUTE;
 
-    private static final int MAX_ESM_COUNT_PER_QUESTION = 27;
+    private static final int MAX_ESM_COUNT_PER_QUESTION = 30;
     private static final int MAX_ESM_COUNT_PER_DAY = 10 * MAX_ESM_COUNT_PER_QUESTION;
 
     public static String activityName = "";
@@ -136,6 +135,7 @@ public class Plugin extends Aware_Plugin {
         // listen to ESM answers or dismiss
         intentFilter.addAction(ACTION_AWARE_ESM_ANSWERED);
         intentFilter.addAction(ACTION_AWARE_ESM_DISMISSED);
+        intentFilter.addAction(ACTION_AWARE_ESM_QUEUE_STARTED);
 
         intentFilter.addAction(ACTION_AWARE_ACTIVITY_ESCALATOR);
 
@@ -775,7 +775,6 @@ public class Plugin extends Aware_Plugin {
 
         esmFactory.addESM(languageReceptivityLikert);
 
-
         switch (trigger) {
             case MWT_TRIGGER_VEHICLE_MIDDLE:
             case MWT_TRIGGER_VEHICLE_START:
@@ -1060,10 +1059,41 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Physical Condition")
                 .setInstructions("What is your physical condition now?")
                 .setSubmitButton("Next");
-        ESM_PAM moodGrid = new ESM_PAM();
-        moodGrid
-                .setTitle("Mood")
-                .setInstructions("What is your mood right now? Choose the most appropriate image.")
+        ESM_Likert frustationLikert = new ESM_Likert();
+        frustationLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Not Frustrated at all")
+                .setLikertMinLabel("Very Frustrated")
+                .setLikertStep(1.0D)
+                .setTitle("Frustration")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert sadHappyLikert = new ESM_Likert();
+        sadHappyLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Happy")
+                .setLikertMinLabel("Very Sad")
+                .setLikertStep(1.0D)
+                .setTitle("Happiness")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert boredExcitedLikert = new ESM_Likert();
+        boredExcitedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Excited")
+                .setLikertMinLabel("Very Bored")
+                .setLikertStep(1.0D)
+                .setTitle("Excitement")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert tensedRelaxedLikert = new ESM_Likert();
+        tensedRelaxedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Relaxed")
+                .setLikertMinLabel("Very Tense")
+                .setLikertStep(1.0D)
+                .setTitle("Relaxation")
+                .setInstructions("How are you feeling now?")
                 .setSubmitButton("Next");
         ESM_Radio socialContextRadio = new ESM_Radio();
         socialContextRadio
@@ -1107,13 +1137,16 @@ public class Plugin extends Aware_Plugin {
         ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
         fillingActivitiesCheckbox
                 .addCheck("Listening to music")
-                .addCheck("Conversing (face to face / chatting)")
-                .addCheck("Observing surrounding")
-                .addCheck("Using mobile for leisure")
-                .addCheck("Exploring or searching")
-                .addCheck("Reading")
+                .addCheck("Watching videos")
+                .addCheck("Chatting / Messaging")
+                .addCheck("Conversing (face to face)")
+                .addCheck("Browsing / Searching online")
+                .addCheck("Reading books/articles/news")
+                .addCheck("Observing / Exploring / Checking surrounding")
+                .addCheck("Consuming food/drinks")
+                .addCheck("Pondering / Contemplating")
                 .addCheck("Working/Studying")
-                .addCheck("Consuming")
+                .addCheck("Doing Nothing")
                 .addCheck("Other")
                 .setTitle("Filling activities")
                 .setInstructions("What are your filling activities now?")
@@ -1141,7 +1174,10 @@ public class Plugin extends Aware_Plugin {
         esmRadio.addFlow(selectedOption, postureRadio.build());
         esmRadio.addFlow(selectedOption, visualAttentionConditionLikert.build());
         esmRadio.addFlow(selectedOption, physicalConditionLikert.build());
-        esmRadio.addFlow(selectedOption, moodGrid.build());
+        esmRadio.addFlow(selectedOption, frustationLikert.build());
+        esmRadio.addFlow(selectedOption, sadHappyLikert.build());
+        esmRadio.addFlow(selectedOption, boredExcitedLikert.build());
+        esmRadio.addFlow(selectedOption, tensedRelaxedLikert.build());
         esmRadio.addFlow(selectedOption, socialContextRadio.build());
         esmRadio.addFlow(selectedOption, crowdLikert.build());
         esmRadio.addFlow(selectedOption, noiseLikert.build());
@@ -1152,8 +1188,6 @@ public class Plugin extends Aware_Plugin {
     }
 
     private static void addCommonQuestions(ESMFactory esmFactory) throws JSONException {
-
-        // common
         ESM_Radio postureRadio = new ESM_Radio();
         postureRadio
                 .addRadio("Moving (e.g. walking/running)")
@@ -1182,10 +1216,41 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Physical Condition")
                 .setInstructions("What is your physical condition now?")
                 .setSubmitButton("Next");
-        ESM_PAM moodGrid = new ESM_PAM();
-        moodGrid
-                .setTitle("Mood")
-                .setInstructions("What is your mood right now? Choose the most appropriate image.")
+        ESM_Likert frustationLikert = new ESM_Likert();
+        frustationLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Not Frustrated at all")
+                .setLikertMinLabel("Very Frustrated")
+                .setLikertStep(1.0D)
+                .setTitle("Frustration")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert sadHappyLikert = new ESM_Likert();
+        sadHappyLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Happy")
+                .setLikertMinLabel("Very Sad")
+                .setLikertStep(1.0D)
+                .setTitle("Happiness")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert boredExcitedLikert = new ESM_Likert();
+        boredExcitedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Excited")
+                .setLikertMinLabel("Very Bored")
+                .setLikertStep(1.0D)
+                .setTitle("Excitement")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert tensedRelaxedLikert = new ESM_Likert();
+        tensedRelaxedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Relaxed")
+                .setLikertMinLabel("Very Tense")
+                .setLikertStep(1.0D)
+                .setTitle("Relaxation")
+                .setInstructions("How are you feeling now?")
                 .setSubmitButton("Next");
         ESM_Radio socialContextRadio = new ESM_Radio();
         socialContextRadio
@@ -1229,13 +1294,16 @@ public class Plugin extends Aware_Plugin {
         ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
         fillingActivitiesCheckbox
                 .addCheck("Listening to music")
-                .addCheck("Conversing (face to face / chatting)")
-                .addCheck("Observing surrounding")
-                .addCheck("Using mobile for leisure")
-                .addCheck("Exploring or searching")
-                .addCheck("Reading")
+                .addCheck("Watching videos")
+                .addCheck("Chatting / Messaging")
+                .addCheck("Conversing (face to face)")
+                .addCheck("Browsing / Searching online")
+                .addCheck("Reading books/articles/news")
+                .addCheck("Observing / Exploring / Checking surrounding")
+                .addCheck("Consuming food/drinks")
+                .addCheck("Pondering / Contemplating")
                 .addCheck("Working/Studying")
-                .addCheck("Consuming")
+                .addCheck("Doing Nothing")
                 .addCheck("Other")
                 .setTitle("Filling activities")
                 .setInstructions("What are your filling activities now?")
@@ -1263,7 +1331,10 @@ public class Plugin extends Aware_Plugin {
         esmFactory.addESM(postureRadio);
         esmFactory.addESM(visualAttentionConditionLikert);
         esmFactory.addESM(physicalConditionLikert);
-        esmFactory.addESM(moodGrid);
+        esmFactory.addESM(frustationLikert);
+        esmFactory.addESM(sadHappyLikert);
+        esmFactory.addESM(boredExcitedLikert);
+        esmFactory.addESM(tensedRelaxedLikert);
         esmFactory.addESM(socialContextRadio);
         esmFactory.addESM(crowdLikert);
         esmFactory.addESM(noiseLikert);
