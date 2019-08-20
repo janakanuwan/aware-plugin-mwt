@@ -90,8 +90,10 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_SERVER = "TRIGGER_SERVER";
     private static final String MWT_TRIGGER_RANDOM = "TRIGGER_RANDOM";
 
-    private static final String MWT_TRIGGER_WALKING = "TRIGGER_WALKING";
-    private static final String MWT_TRIGGER_VEHICLE = "TRIGGER_VEHICLE";
+    private static final String MWT_TRIGGER_WALKING_START = "TRIGGER_WALKING_START";
+    private static final String MWT_TRIGGER_WALKING_MIDDLE = "TRIGGER_WALKING_MIDDLE";
+    private static final String MWT_TRIGGER_VEHICLE_START = "TRIGGER_VEHICLE_START";
+    private static final String MWT_TRIGGER_VEHICLE_MIDDLE = "TRIGGER_VEHICLE_MIDDLE";
     private static final String MWT_TRIGGER_ESCALATOR = "TRIGGER_ESCALATOR";
 
     private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
@@ -485,7 +487,7 @@ public class Plugin extends Aware_Plugin {
                 if (activityChanged) {
                     if (currentTimeMillis - lastActivityChangeMillis > MILLIS_30_SECONDS + getRandomMillis(MILLIS_90_SECONDS)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
-                        triggerCause = MWT_TRIGGER_VEHICLE;
+                        triggerCause = MWT_TRIGGER_VEHICLE_START;
                         plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
 
                         activityChanged = false;
@@ -494,12 +496,12 @@ public class Plugin extends Aware_Plugin {
                     if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
-                        triggerCause = MWT_TRIGGER_VEHICLE;
+                        triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
                         if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
                             Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
-                            triggerCause = MWT_TRIGGER_VEHICLE;
+                            triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
                             plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                         }
                     }
@@ -510,7 +512,7 @@ public class Plugin extends Aware_Plugin {
                 if (activityChanged) {
                     if (currentTimeMillis - lastActivityChangeMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_2_MINUTES)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
-                        triggerCause = MWT_TRIGGER_WALKING;
+                        triggerCause = MWT_TRIGGER_WALKING_START;
                         plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
 
                         activityChanged = false;
@@ -519,12 +521,12 @@ public class Plugin extends Aware_Plugin {
                     if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
-                        triggerCause = MWT_TRIGGER_WALKING;
+                        triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
                         if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
                             Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
-                            triggerCause = MWT_TRIGGER_WALKING;
+                            triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
                             plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                         }
                     }
@@ -752,239 +754,8 @@ public class Plugin extends Aware_Plugin {
         }
     }
 
+
     private static String getQuestionnaire(String trigger, int emsExpirationThresholdInSeconds) throws JSONException {
-        ESMFactory eSMFactory = new ESMFactory();
-
-        ESM_Likert languageReceptivityLikert = new ESM_Likert();
-        languageReceptivityLikert
-                .setLikertMax(7)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Receptivity to Learn")
-                .setInstructions("How interested you are in learning a new language (vocabulary) now?")
-                .setSubmitButton("Next")
-                .setTrigger(trigger)
-                .setExpirationThreshold(emsExpirationThresholdInSeconds)
-                .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
-
-        // commuting
-        ESM_Radio commutingMediumRadio = new ESM_Radio();
-        commutingMediumRadio
-                .addRadio("Walking")
-                .addRadio("Taking the bus")
-                .addRadio("Taking the MRT")
-                .addRadio("Riding a bike / driving")
-                .addRadio("Taking the lift / elevator")
-                .addRadio("Other")
-                .setTitle("Commuting Medium")
-                .setInstructions("What's the medium of commuting?")
-                .setSubmitButton("OK");
-
-        // waiting
-        ESM_Radio waitingCategoryRadio = new ESM_Radio();
-        waitingCategoryRadio
-                .addRadio("Waiting for a working machine/system (e.g. wait for the printer, wait for loading, etc)")
-                .addRadio("Waiting for someone (e.g. hold on the phone, wait to go, etc)")
-                .addRadio("Waiting in turn (e.g. bus, queue, etc)")
-                .addRadio("Other")
-                .setTitle("Waiting Category")
-                .setInstructions("What's your purpose of waiting?")
-                .setSubmitButton("Next");
-        ESM_Radio waitingTimeRadio = new ESM_Radio();
-        waitingTimeRadio
-                .addRadio("Cannot be estimated")
-                .addRadio("Less than 1 min")
-                .addRadio("Between 1 min - 10 min")
-                .addRadio("Between 10 min - 20 min")
-                .addRadio("More than 20min")
-                .addRadio("Other")
-                .setTitle("Waiting Time")
-                .setInstructions("How long do you estimate you should wait?")
-                .setSubmitButton("OK");
-
-        // relaxing
-        ESM_Radio relaxingCategoryRadio = new ESM_Radio();
-        relaxingCategoryRadio
-                .addRadio("Watching videos")
-                .addRadio("Listening to music")
-                .addRadio("Taking a break")
-                .addRadio("Reading")
-                .addRadio("Using a smart phone for leisure")
-                .addRadio("Other")
-                .setTitle("Relaxing Reason")
-                .setInstructions("What's your way of relaxing?")
-                .setSubmitButton("OK");
-
-        // conversing
-        ESM_Radio conversingMediumRadio = new ESM_Radio();
-        conversingMediumRadio
-                .addRadio("Face to face")
-                .addRadio("By audio/video call")
-                .addRadio("By text/multimedia messages")
-                .addRadio("Other")
-                .setTitle("Conversing Method")
-                .setInstructions("What's your way of conversing?")
-                .setSubmitButton("OK");
-
-        // primary activities
-        ESM_Radio primaryActivityRadio = new ESM_Radio();
-        primaryActivityRadio
-                .addRadio("Commuting (e.g. walking/bus/lift)")
-                .addRadio("Waiting")
-                .addRadio("Relaxing")
-                .addRadio("Conversing (e.g. talk/call/chat)")
-                .addRadio("Consuming")
-                .addRadio("Working/Studying")
-                .addRadio("Exercising")
-                .addRadio("Observing/Exploring")
-                .addRadio("Other")
-                .addFlow("Commuting (e.g. walking/bus/lift)", commutingMediumRadio.build())
-                .addFlow("Waiting", waitingCategoryRadio.build())
-                .addFlow("Waiting", waitingTimeRadio.build())
-                .addFlow("Relaxing", relaxingCategoryRadio.build())
-                .addFlow("Conversing (e.g. talk/call/chat)", conversingMediumRadio.build())
-                .setTitle("Primary Activity")
-                .setInstructions("What is the MAIN activity you are doing now?")
-                .setSubmitButton("Next");
-
-        // common
-        ESM_Likert familiarityLikert = new ESM_Likert();
-        familiarityLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Familiarity")
-                .setInstructions("How familiar are you with the MAIN activity?")
-                .setSubmitButton("Next");
-        ESM_Radio postureRadio = new ESM_Radio();
-        postureRadio
-                .addRadio("Moving (e.g. walking/running)")
-                .addRadio("Standing")
-                .addRadio("Sitting")
-                .addRadio("Lying")
-                .addRadio("Other")
-                .setTitle("Body Posture")
-                .setInstructions("What's your posture?")
-                .setSubmitButton("Next");
-        ESM_Likert physicalDemandLikert = new ESM_Likert();
-        physicalDemandLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Physical Demand")
-                .setInstructions("How physically demanding is the task you are doing now?")
-                .setSubmitButton("Next");
-        ESM_Likert mentalDemandLikert = new ESM_Likert();
-        mentalDemandLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Mental Demand")
-                .setInstructions("How mentally demanding is the task you are doing now?")
-                .setSubmitButton("Next");
-        ESM_Likert urgencyLikert = new ESM_Likert();
-        urgencyLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Urgent")
-                .setLikertMinLabel("Not Urgent")
-                .setLikertStep(1.0D)
-                .setTitle("Urgency")
-                .setInstructions("How urgent is the task you are doing now?")
-                .setSubmitButton("Next");
-        ESM_Likert physicalConditionLikert = new ESM_Likert();
-        physicalConditionLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Active")
-                .setLikertMinLabel("Very Tired")
-                .setLikertStep(1.0D)
-                .setTitle("Physical Condition")
-                .setInstructions("What is your physical condition now?")
-                .setSubmitButton("Next");
-        ESM_PAM moodGrid = new ESM_PAM();
-        moodGrid
-                .setTitle("Mood")
-                .setInstructions("What is your mood right now? Choose the most appropriate image.")
-                .setSubmitButton("Next");
-        ESM_Radio socialContextRadio = new ESM_Radio();
-        socialContextRadio
-                .addRadio("Alone")
-                .addRadio("Family members")
-                .addRadio("Friends")
-                .addRadio("Strangers")
-                .addRadio("Other")
-                .setTitle("Social Context")
-                .setInstructions("Who are you with now?")
-                .setSubmitButton("Next");
-        ESM_Likert crowdLikert = new ESM_Likert();
-        crowdLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Crowded")
-                .setLikertMinLabel("Not Crowded")
-                .setLikertStep(1.0D)
-                .setTitle("Crowdedness")
-                .setInstructions("How crowded is your environment now?")
-                .setSubmitButton("Next");
-        ESM_Checkbox environmentConditionCheckbox = new ESM_Checkbox();
-        environmentConditionCheckbox
-                .addCheck("Quiet")
-                .addCheck("Noisy")
-                .addCheck("Hot")
-                .addCheck("Cool")
-                .addCheck("Other")
-                .setTitle("Environmental Conditions")
-                .setInstructions("What are the environmental conditions?")
-                .setSubmitButton("Next");
-        ESM_Radio secondaryActivityRadio = new ESM_Radio();
-        secondaryActivityRadio
-                .addRadio("Commuting")
-                .addRadio("Waiting")
-                .addRadio("Relaxing")
-                .addRadio("Conversing")
-                .addRadio("Consuming")
-                .addRadio("Working/Studying")
-                .addRadio("Exercising")
-                .addRadio("Observing/Exploring")
-                .addRadio("Doing Nothing")
-                .addRadio("Other")
-                .addFlow("Commuting", commutingMediumRadio.build())
-                .addFlow("Waiting", waitingCategoryRadio.build())
-                .addFlow("Waiting", waitingTimeRadio.build())
-                .addFlow("Relaxing", relaxingCategoryRadio.build())
-                .addFlow("Conversing", conversingMediumRadio.build())
-                .setTitle("Secondary Activity")
-                .setInstructions("What is the secondary activities you are doing now?")
-                .setSubmitButton("Next");
-        ESM_Radio otherLearningActivityRadio = new ESM_Radio();
-        otherLearningActivityRadio
-                .addRadio("None")
-                .addRadio("Other")
-                .setTitle("Learning Activity Preferences")
-                .setInstructions("Any other desired things you like to learn now? If not why?")
-                .setSubmitButton("OK/Next");
-
-        eSMFactory.addESM(languageReceptivityLikert);
-        eSMFactory.addESM(primaryActivityRadio);
-        eSMFactory.addESM(familiarityLikert);
-        eSMFactory.addESM(postureRadio);
-        eSMFactory.addESM(physicalDemandLikert);
-        eSMFactory.addESM(mentalDemandLikert);
-        eSMFactory.addESM(urgencyLikert);
-        eSMFactory.addESM(physicalConditionLikert);
-        eSMFactory.addESM(moodGrid);
-        eSMFactory.addESM(socialContextRadio);
-        eSMFactory.addESM(crowdLikert);
-        eSMFactory.addESM(environmentConditionCheckbox);
-        eSMFactory.addESM(secondaryActivityRadio);
-        eSMFactory.addESM(otherLearningActivityRadio);
-
-        return eSMFactory.build();
-    }
-
-    private static String getEsmQuestionnaire(String trigger, int emsExpirationThresholdInSeconds) throws JSONException {
         ESMFactory esmFactory = new ESMFactory();
 
         ESM_Likert languageReceptivityLikert = new ESM_Likert();
@@ -1000,53 +771,133 @@ public class Plugin extends Aware_Plugin {
                 .setExpirationThreshold(emsExpirationThresholdInSeconds)
                 .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
 
-        ESM_Radio commutingMediumRadio = new ESM_Radio();
-        commutingMediumRadio
-                .addRadio("By Bus")
-                .addRadio("By Taxi")
-                .addRadio("By MRT/Train")
-                .addRadio("Riding a bike / driving")
-                .addRadio("Riding a bike / driving")
-                .addRadio("Taking the lift / elevator")
-                .addRadio("None (Not Commuting)r")
-                .addRadio("Other")
-                .setTitle("Commuting Medium")
-                .setInstructions("What's the medium of commuting?")
-                .setSubmitButton("OK");
-//
-//        ESM_Radio primaryActivityRadio = new ESM_Radio();
-//        primaryActivityRadio
-//                .addRadio("Commuting (e.g. walking/bus/lift)")
-//                .addRadio("Waiting")
-//                .addRadio("Relaxing")
-//                .addRadio("Conversing (e.g. talk/call/chat)")
-//                .addRadio("Consuming")
-//                .addRadio("Working/Studying")
-//                .addRadio("Exercising")
-//                .addRadio("Observing/Exploring")
-//                .addRadio("Other")
-//                .addFlow("Commuting (e.g. walking/bus/lift)", commutingMediumRadio.build())
-//                .addFlow("Waiting", waitingCategoryRadio.build())
-//                .addFlow("Waiting", waitingTimeRadio.build())
-//                .addFlow("Relaxing", relaxingCategoryRadio.build())
-//                .addFlow("Conversing (e.g. talk/call/chat)", conversingMediumRadio.build())
-//                .setTitle("Primary Activity")
-//                .setInstructions("What is the MAIN activity you are doing now?")
-//                .setSubmitButton("Next");
+        esmFactory.addESM(languageReceptivityLikert);
+
+
+        switch (trigger) {
+            case MWT_TRIGGER_VEHICLE_MIDDLE:
+            case MWT_TRIGGER_VEHICLE_START:
+                ESM_Radio commutingMediumRadio = new ESM_Radio();
+
+                commutingMediumRadio
+                        .addRadio("By Bus")
+                        .addRadio("By Taxi")
+                        .addRadio("By MRT/Train")
+                        .addRadio("Not commuting")
+                        .addRadio("Other")
+                        .setTitle("Commuting Medium")
+                        .setInstructions("What is your commuting medium now (within last 3 minutes)?")
+                        .setSubmitButton("Next")
+                ;
+                addTransportationQuestions(commutingMediumRadio, "By Bus");
+                addCommonQuestions(commutingMediumRadio, "By Bus");
+                addTransportationQuestions(commutingMediumRadio, "By Taxi");
+                addCommonQuestions(commutingMediumRadio, "By Taxi");
+                addTransportationQuestions(commutingMediumRadio, "By MRT/Train");
+                addCommonQuestions(commutingMediumRadio, "By MRT/Train");
+
+                esmFactory.addESM(commutingMediumRadio);
+
+                if (MWT_TRIGGER_VEHICLE_START.equalsIgnoreCase(trigger)) {
+                    ESM_Radio waitingRadio = new ESM_Radio();
+                    waitingRadio
+                            .addRadio("Yes")
+                            .addRadio("No")
+                            .setTitle("Waiting")
+                            .setInstructions("Were you waiting for transportation about 5 minutes ago?")
+                            .setSubmitButton("Next");
+                    addWaitingQuestions(waitingRadio, "Yes");
+
+                    esmFactory.addESM(waitingRadio);
+                }
+
+                break;
+            case MWT_TRIGGER_WALKING_START:
+            case MWT_TRIGGER_WALKING_MIDDLE:
+                ESM_Radio walkingRadio = new ESM_Radio();
+                walkingRadio
+                        .addRadio("Yes")
+                        .addRadio("No")
+                        .addRadio("Other")
+                        .setTitle("Walking")
+                        .setInstructions("Are you walking now (within last 3 minutes) ?")
+                        .setSubmitButton("Next");
+                addWalkingQuestions(walkingRadio, "Yes");
+                addCommonQuestions(walkingRadio, "Yes");
+
+                esmFactory.addESM(walkingRadio);
+
+                break;
+            case MWT_TRIGGER_ESCALATOR:
+                ESM_Radio escalatorRadio = new ESM_Radio();
+                escalatorRadio
+                        .addRadio("Yes")
+                        .addRadio("No")
+                        .addRadio("Other")
+                        .setTitle("Escalator/Lift")
+                        .setInstructions("Are you taking the lift / escalator now (within last 3 minutes)?")
+                        .setSubmitButton("Next");
+
+                addEscalatorQuestions(escalatorRadio, "Yes");
+                addCommonQuestions(escalatorRadio, "Yes");
+
+                esmFactory.addESM(escalatorRadio);
+
+                break;
+            case MWT_TRIGGER_MANUAL:
+                ESM_Radio mainActivityRadio = new ESM_Radio();
+                mainActivityRadio
+                        .addRadio("By Bus")
+                        .addRadio("By Taxi")
+                        .addRadio("By MRT/Train")
+                        .addRadio("By Walking")
+                        .addRadio("Taking Escalator/Lift")
+                        .addRadio("Waiting for Commuting")
+                        .addRadio("Other")
+                        .setTitle("Commuting Medium")
+                        .setInstructions("What is your commuting medium now (within last 3 minutes)?")
+                        .setSubmitButton("Next")
+                ;
+
+                addTransportationQuestions(mainActivityRadio, "By Bus");
+                addCommonQuestions(mainActivityRadio, "By Bus");
+
+                addTransportationQuestions(mainActivityRadio, "By Taxi");
+                addCommonQuestions(mainActivityRadio, "By Taxi");
+
+                addTransportationQuestions(mainActivityRadio, "By MRT/Train");
+                addCommonQuestions(mainActivityRadio, "By MRT/Train");
+
+                addWalkingQuestions(mainActivityRadio, "By Walking");
+                addCommonQuestions(mainActivityRadio, "By Walking");
+
+                addEscalatorQuestions(mainActivityRadio, "Taking Escalator/Lift");
+                addCommonQuestions(mainActivityRadio, "Taking Escalator/Lift");
+
+                addWaitingQuestions(mainActivityRadio, "Waiting for Commuting");
+
+                esmFactory.addESM(mainActivityRadio);
+
+                break;
+            default:
+                addCommonQuestions(esmFactory);
+                break;
+        }
 
         return esmFactory.build();
     }
 
-    private static void addTransportationQuestions(ESMFactory esmFactory) throws JSONException {
+
+    private static void addTransportationQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
         ESM_Number expectedTimeNumeric = new ESM_Number();
         expectedTimeNumeric.setTitle("Expected Time: Transportation")
-                .setInstructions("How long (minutes) do you think it will take for you to get off")
+                .setInstructions("How long (minutes) do you think it will take for you to get off?")
                 .setSubmitButton("Next");
 
-        esmFactory.addESM(expectedTimeNumeric);
+        esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
     }
 
-    private static void addWaitingQuestions(ESMFactory esmFactory) throws JSONException{
+    private static void addWaitingQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
         ESM_Likert languageReceptivityLikert = new ESM_Likert();
         languageReceptivityLikert
                 .setLikertMax(7)
@@ -1116,20 +967,20 @@ public class Plugin extends Aware_Plugin {
         ESM_Number expectedTimeNumeric = new ESM_Number();
         expectedTimeNumeric.setTitle("Expected Time: Waiting")
                 .setInstructions("How long (minutes) did you wait for transportation?")
-                .setSubmitButton("Next");
+                .setSubmitButton("Ok");
 
-        esmFactory.addESM(languageReceptivityLikert);
-        esmFactory.addESM(postureRadio);
-        esmFactory.addESM(visualAttentionConditionLikert);
-        esmFactory.addESM(socialContextRadio);
-        esmFactory.addESM(crowdLikert);
-        esmFactory.addESM(noiseLikert);
-        esmFactory.addESM(temperatureLikert);
-        esmFactory.addESM(expectedTimeNumeric);
+        esmRadio.addFlow(selectedOption, languageReceptivityLikert.build());
+        esmRadio.addFlow(selectedOption, postureRadio.build());
+        esmRadio.addFlow(selectedOption, visualAttentionConditionLikert.build());
+        esmRadio.addFlow(selectedOption, socialContextRadio.build());
+        esmRadio.addFlow(selectedOption, crowdLikert.build());
+        esmRadio.addFlow(selectedOption, noiseLikert.build());
+        esmRadio.addFlow(selectedOption, temperatureLikert.build());
+        esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
     }
 
 
-    private static void addWalkingQuestions(ESMFactory esmFactory) throws JSONException {
+    private static void addWalkingQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
         ESM_Likert urgencyLikert = new ESM_Likert();
         urgencyLikert
                 .setLikertMax(5)
@@ -1153,12 +1004,12 @@ public class Plugin extends Aware_Plugin {
                 .setInstructions("How familiar are you with the road?")
                 .setSubmitButton("Next");
 
-        esmFactory.addESM(urgencyLikert);
-        esmFactory.addESM(expectedTimeNumeric);
-        esmFactory.addESM(familiarityLikert);
+        esmRadio.addFlow(selectedOption, urgencyLikert.build());
+        esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
+        esmRadio.addFlow(selectedOption, familiarityLikert.build());
     }
 
-    private static void addEscalatorQuestions(ESMFactory esmFactory) throws JSONException {
+    private static void addEscalatorQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
         ESM_Likert urgencyLikert = new ESM_Likert();
         urgencyLikert
                 .setLikertMax(5)
@@ -1173,10 +1024,130 @@ public class Plugin extends Aware_Plugin {
                 .setInstructions("HHow long (minutes) do you think it will take for you to get off")
                 .setSubmitButton("Next");
 
-        esmFactory.addESM(urgencyLikert);
-        esmFactory.addESM(expectedTimeNumeric);
+        esmRadio.addFlow(selectedOption, urgencyLikert.build());
+        esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
+
     }
 
+    private static void addCommonQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
+        ESM_Radio postureRadio = new ESM_Radio();
+        postureRadio
+                .addRadio("Moving (e.g. walking/running)")
+                .addRadio("Standing")
+                .addRadio("Sitting")
+                .addRadio("Lying")
+                .addRadio("Other")
+                .setTitle("Body Posture")
+                .setInstructions("What's your posture?")
+                .setSubmitButton("Next");
+        ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
+        visualAttentionConditionLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Active")
+                .setLikertMinLabel("Very Tired")
+                .setLikertStep(1.0D)
+                .setTitle("Visual Attention")
+                .setInstructions("How much visual attention should you pay now?")
+                .setSubmitButton("Next");
+        ESM_Likert physicalConditionLikert = new ESM_Likert();
+        physicalConditionLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Active")
+                .setLikertMinLabel("Very Tired")
+                .setLikertStep(1.0D)
+                .setTitle("Physical Condition")
+                .setInstructions("What is your physical condition now?")
+                .setSubmitButton("Next");
+        ESM_PAM moodGrid = new ESM_PAM();
+        moodGrid
+                .setTitle("Mood")
+                .setInstructions("What is your mood right now? Choose the most appropriate image.")
+                .setSubmitButton("Next");
+        ESM_Radio socialContextRadio = new ESM_Radio();
+        socialContextRadio
+                .addRadio("Alone")
+                .addRadio("Family members")
+                .addRadio("Friends")
+                .addRadio("Strangers")
+                .addRadio("Other")
+                .setTitle("Social Context")
+                .setInstructions("Who are you with now?")
+                .setSubmitButton("Next");
+        ESM_Likert crowdLikert = new ESM_Likert();
+        crowdLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Crowded")
+                .setLikertMinLabel("Not Crowded")
+                .setLikertStep(1.0D)
+                .setTitle("Crowdedness")
+                .setInstructions("How crowded is your surrounding now?")
+                .setSubmitButton("Next");
+        ESM_Likert noiseLikert = new ESM_Likert();
+        noiseLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very Noisy")
+                .setLikertMinLabel("Very Quiet")
+                .setLikertStep(1.0D)
+                .setTitle("Noisiness")
+                .setInstructions("How noisy is your surrounding now?")
+                .setSubmitButton("Next");
+        ESM_Likert temperatureLikert = new ESM_Likert();
+        temperatureLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Too Cold")
+                .setLikertMinLabel("Too Hot")
+                .setLikertStep(1.0D)
+                .setTitle("Temperature")
+                .setInstructions("How cold/hot is your surrounding now?")
+                .setSubmitButton("Next");
+
+        // filling
+        ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
+        fillingActivitiesCheckbox
+                .addCheck("Listening to music")
+                .addCheck("Conversing (face to face / chatting)")
+                .addCheck("Observing surrounding")
+                .addCheck("Using mobile for leisure")
+                .addCheck("Exploring or searching")
+                .addCheck("Reading")
+                .addCheck("Working/Studying")
+                .addCheck("Consuming")
+                .addCheck("Other")
+                .setTitle("Filling activities")
+                .setInstructions("What are your filling activities now?")
+                .setSubmitButton("Next");
+
+        ESM_Likert physicalDemandLikert = new ESM_Likert();
+        physicalDemandLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Physical Demand")
+                .setInstructions("How physically demanding are those filling activities?")
+                .setSubmitButton("Next");
+        ESM_Likert mentalDemandLikert = new ESM_Likert();
+        mentalDemandLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
+                .setLikertStep(1.0D)
+                .setTitle("Mental Demand")
+                .setInstructions("How mentally demanding are those filling activities?")
+                .setSubmitButton("Next/Ok");
+
+        esmRadio.addFlow(selectedOption, postureRadio.build());
+        esmRadio.addFlow(selectedOption, visualAttentionConditionLikert.build());
+        esmRadio.addFlow(selectedOption, physicalConditionLikert.build());
+        esmRadio.addFlow(selectedOption, moodGrid.build());
+        esmRadio.addFlow(selectedOption, socialContextRadio.build());
+        esmRadio.addFlow(selectedOption, crowdLikert.build());
+        esmRadio.addFlow(selectedOption, noiseLikert.build());
+        esmRadio.addFlow(selectedOption, temperatureLikert.build());
+        esmRadio.addFlow(selectedOption, fillingActivitiesCheckbox.build());
+        esmRadio.addFlow(selectedOption, physicalDemandLikert.build());
+        esmRadio.addFlow(selectedOption, mentalDemandLikert.build());
+    }
 
     private static void addCommonQuestions(ESMFactory esmFactory) throws JSONException {
 
@@ -1285,7 +1256,7 @@ public class Plugin extends Aware_Plugin {
                 .setLikertStep(1.0D)
                 .setTitle("Mental Demand")
                 .setInstructions("How mentally demanding are those filling activities?")
-                .setSubmitButton("Next");
+                .setSubmitButton("Next/Ok");
 
         esmFactory.addESM(postureRadio);
         esmFactory.addESM(visualAttentionConditionLikert);
