@@ -112,7 +112,8 @@ public class Plugin extends Aware_Plugin {
     private static final long MILLIS_10_MINUTES = 10 * MILLIS_1_MINUTE;
     private static final long MILLIS_20_MINUTES = 20 * MILLIS_1_MINUTE;
 
-    private static final int MAX_ESM_COUNT_PER_DAY = 12;
+    private static final int MAX_ESM_COUNT_PER_QUESTION = 27;
+    private static final int MAX_ESM_COUNT_PER_DAY = 10 * MAX_ESM_COUNT_PER_QUESTION;
 
     public static String activityName = "";
     private static String triggerCause = "";
@@ -135,7 +136,6 @@ public class Plugin extends Aware_Plugin {
         // listen to ESM answers or dismiss
         intentFilter.addAction(ACTION_AWARE_ESM_ANSWERED);
         intentFilter.addAction(ACTION_AWARE_ESM_DISMISSED);
-        intentFilter.addAction(ACTION_AWARE_ESM_EXPIRED);
 
         intentFilter.addAction(ACTION_AWARE_ACTIVITY_ESCALATOR);
 
