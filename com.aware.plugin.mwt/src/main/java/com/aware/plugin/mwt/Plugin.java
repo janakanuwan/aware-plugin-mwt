@@ -150,8 +150,10 @@ public class Plugin extends Aware_Plugin {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
+                Log.d(TAG, "[ESM TRIGGER] " + now + ", cause: " + triggerCause + ", esmCount: " + esmAnsweredOrDismissedCount.get());
+
                 if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow() && esmAnsweredOrDismissedCount.get() < MAX_ESM_COUNT_PER_DAY) {
-                    Log.i(TAG, "[MWT ESM] Start: " + now + ", cause: " + triggerCause + ", esmCount: " + esmAnsweredOrDismissedCount);
+                    Log.i(TAG, "[MWT ESM] Starting");
                     lastEsmMillis = now;
                     lastEsmAnsweredOrDismissedMillis = now;
                     CONTEXT_PRODUCER.onContext();
@@ -449,7 +451,7 @@ public class Plugin extends Aware_Plugin {
             long currentTimeMillis = System.currentTimeMillis();
 
             if (ACTION_AWARE_ACTIVITY_ESCALATOR.equalsIgnoreCase(action)) {
-                Toast.makeText(plugin.getApplicationContext(), "Escalator Detected", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(plugin.getApplicationContext(), "Escalator Detected", Toast.LENGTH_SHORT).show();
                 if (currentTimeMillis - lastEscalatorTime < MILLIS_20_SECONDS) {
                     return;
                 }
@@ -471,7 +473,7 @@ public class Plugin extends Aware_Plugin {
                 String newActivityName = Plugin.getActivityName(activity);
                 Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + newActivityName + ", " + confidence);
 
-                Toast.makeText(plugin.getApplicationContext(), newActivityName + ", " + confidence, Toast.LENGTH_LONG).show();
+//                Toast.makeText(plugin.getApplicationContext(), newActivityName + ", " + confidence, Toast.LENGTH_LONG).show();
 
                 if (!newActivityName.equalsIgnoreCase(activityName) && confidence > 60) {
                     lastActivity = getActivityCode(activityName);
@@ -741,9 +743,9 @@ public class Plugin extends Aware_Plugin {
                 }
                 iteration++;
 
-                if (diff > DELTA || diff < -DELTA) {
-                    Log.d(TAG_AWARE_MWT, "Delta: " + diff);
-                }
+//                if (diff > DELTA || diff < -DELTA) {
+//                    Log.d(TAG_AWARE_MWT, "Delta: " + diff);
+//                }
             }
 
             diffTot += tot;
@@ -787,7 +789,7 @@ public class Plugin extends Aware_Plugin {
                         .addRadio("Other")
                         .setTitle("Commuting Medium")
                         .setInstructions("What is your commuting medium now (within last 3 minutes)?")
-                        .setSubmitButton("Next")
+                        .setSubmitButton("Next/Ok")
                 ;
                 addTransportationQuestions(commutingMediumRadio, "By Bus");
                 addCommonQuestions(commutingMediumRadio, "By Bus");
@@ -805,7 +807,7 @@ public class Plugin extends Aware_Plugin {
                             .addRadio("No")
                             .setTitle("Waiting")
                             .setInstructions("Were you waiting for transportation about 5 minutes ago?")
-                            .setSubmitButton("Next");
+                            .setSubmitButton("Next/Ok");
                     addWaitingQuestions(waitingRadio, "Yes");
 
                     esmFactory.addESM(waitingRadio);
@@ -821,7 +823,7 @@ public class Plugin extends Aware_Plugin {
                         .addRadio("Other")
                         .setTitle("Walking")
                         .setInstructions("Are you walking now (within last 3 minutes) ?")
-                        .setSubmitButton("Next");
+                        .setSubmitButton("Next/Ok");
                 addWalkingQuestions(walkingRadio, "Yes");
                 addCommonQuestions(walkingRadio, "Yes");
 
@@ -836,7 +838,7 @@ public class Plugin extends Aware_Plugin {
                         .addRadio("Other")
                         .setTitle("Escalator/Lift")
                         .setInstructions("Are you taking the lift / escalator now (within last 3 minutes)?")
-                        .setSubmitButton("Next");
+                        .setSubmitButton("Next/Ok");
 
                 addEscalatorQuestions(escalatorRadio, "Yes");
                 addCommonQuestions(escalatorRadio, "Yes");
@@ -856,7 +858,7 @@ public class Plugin extends Aware_Plugin {
                         .addRadio("Other")
                         .setTitle("Commuting Medium")
                         .setInstructions("What is your commuting medium now (within last 3 minutes)?")
-                        .setSubmitButton("Next")
+                        .setSubmitButton("Next/Ok")
                 ;
 
                 addTransportationQuestions(mainActivityRadio, "By Bus");
