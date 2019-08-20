@@ -10,7 +10,6 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
@@ -20,7 +19,6 @@ import com.aware.ui.esms.ESMFactory;
 import com.aware.ui.esms.ESM_Checkbox;
 import com.aware.ui.esms.ESM_Likert;
 import com.aware.ui.esms.ESM_Number;
-import com.aware.ui.esms.ESM_PAM;
 import com.aware.ui.esms.ESM_Radio;
 import com.aware.utils.Aware_Plugin;
 
@@ -73,6 +71,7 @@ public class Plugin extends Aware_Plugin {
     private static final String ACTION_AWARE_ESM_ANSWERED = "ACTION_AWARE_ESM_ANSWERED";
     private static final String ACTION_AWARE_ESM_DISMISSED = "ACTION_AWARE_ESM_DISMISSED";
     private static final String ACTION_AWARE_ESM_EXPIRED = "ACTION_AWARE_ESM_EXPIRED";
+    private static final String ACTION_AWARE_ESM_QUEUE_STARTED = "ACTION_AWARE_ESM_QUEUE_STARTED";
 
     private static final String ACTION_AWARE_ACTIVITY_ESCALATOR = "ACTION_AWARE_ACTIVITY_ESCALATOR";
     private static final String AMBIENT_PRESSURE = "double_values_0";
@@ -112,15 +111,14 @@ public class Plugin extends Aware_Plugin {
     private static final long MILLIS_10_MINUTES = 10 * MILLIS_1_MINUTE;
     private static final long MILLIS_20_MINUTES = 20 * MILLIS_1_MINUTE;
 
-    private static final int MAX_ESM_COUNT_PER_QUESTION = 27;
-    private static final int MAX_ESM_COUNT_PER_DAY = 10 * MAX_ESM_COUNT_PER_QUESTION;
+    private static final int MAX_ESM_COUNT_PER_DAY = 10;
 
     public static String activityName = "";
     private static String triggerCause = "";
     private static String packageName = "";
     private static volatile long lastEsmMillis;
-    private static volatile long lastEsmAnsweredOrDismissedMillis;
-    private static AtomicInteger esmAnsweredOrDismissedCount = new AtomicInteger(0);
+    private static volatile long lastEsmSeenMillis;
+    private static AtomicInteger esmSeenCount = new AtomicInteger(0);
 
     private MwtListener eventListener;
     private BarometerListener barometerListener;
@@ -134,8 +132,9 @@ public class Plugin extends Aware_Plugin {
         // trigger for MWT
         intentFilter.addAction(ACTION_AWARE_MWT_TRIGGER);
         // listen to ESM answers or dismiss
-        intentFilter.addAction(ACTION_AWARE_ESM_ANSWERED);
-        intentFilter.addAction(ACTION_AWARE_ESM_DISMISSED);
+//        intentFilter.addAction(ACTION_AWARE_ESM_ANSWERED);
+//        intentFilter.addAction(ACTION_AWARE_ESM_DISMISSED);
+        intentFilter.addAction(ACTION_AWARE_ESM_QUEUE_STARTED);
 
         intentFilter.addAction(ACTION_AWARE_ACTIVITY_ESCALATOR);
 
@@ -150,16 +149,16 @@ public class Plugin extends Aware_Plugin {
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 long now = System.currentTimeMillis();
-                Log.d(TAG, "[ESM TRIGGER] " + now + ", cause: " + triggerCause + ", esmCount: " + esmAnsweredOrDismissedCount.get());
+                Log.d(TAG, "[ESM TRIGGER] " + now + ", cause: " + triggerCause + ", esmCount: " + esmSeenCount.get());
 
-                if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow() && esmAnsweredOrDismissedCount.get() < MAX_ESM_COUNT_PER_DAY) {
+                if ((millis <= 0 || now - lastEsmMillis > MINIMUM_ESM_GAP_IN_MILLIS) && isCorrectDurationNow() && esmSeenCount.get() < MAX_ESM_COUNT_PER_DAY) {
                     Log.i(TAG, "[MWT ESM] Starting");
                     lastEsmMillis = now;
-                    lastEsmAnsweredOrDismissedMillis = now;
+                    lastEsmSeenMillis = now;
                     CONTEXT_PRODUCER.onContext();
                     startESM(triggerCause);
                 } else if (!isCorrectDurationNow()) {
-                    esmAnsweredOrDismissedCount.set(0);
+                    esmSeenCount.set(0);
                 }
             }
         }, millis);
@@ -461,10 +460,9 @@ public class Plugin extends Aware_Plugin {
                 plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
             }
 
-            if (ACTION_AWARE_ESM_ANSWERED.equalsIgnoreCase(action)
-                    || ACTION_AWARE_ESM_DISMISSED.equalsIgnoreCase(action)) {
-                lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
-                esmAnsweredOrDismissedCount.getAndIncrement();
+            if (ACTION_AWARE_ESM_QUEUE_STARTED.equalsIgnoreCase(action)) {
+                lastEsmSeenMillis = currentTimeMillis;
+                esmSeenCount.getAndIncrement();
             }
 
             if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equalsIgnoreCase(action)) {
@@ -495,9 +493,9 @@ public class Plugin extends Aware_Plugin {
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
+                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
-                        lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
+                        lastEsmSeenMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
@@ -520,9 +518,9 @@ public class Plugin extends Aware_Plugin {
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmAnsweredOrDismissedMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
+                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
-                        lastEsmAnsweredOrDismissedMillis = currentTimeMillis;
+                        lastEsmSeenMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
@@ -546,53 +544,6 @@ public class Plugin extends Aware_Plugin {
                     lastAppChangeMillis = currentTimeMillis;
                 }
             }
-
-
-//            boolean expectedActivity = false;
-//
-//            if (ACTION_AWARE_GOOGLE_ACTIVITY_RECOGNITION.equalsIgnoreCase(action)) {
-//                int activity = intent.getIntExtra("activity", ACTIVITY_CODE_UNKNOWN);
-//                int confidence = intent.getIntExtra("confidence", 0);
-//                String newActivityName = Plugin.getActivityName(activity);
-//                Log.d(TAG_AWARE_MWT, "[MWT] Activity: " + newActivityName + ", " + confidence);
-//                if (!newActivityName.equals(activityName) && confidence > 60) {
-//                    expectedActivity = activity == ACTIVITY_CODE_IN_VEHICLE || activity == ACTIVITY_CODE_STILL || activity == ACTIVITY_CODE_WALKING;
-//                    activityName = newActivityName;
-//                    lastActivityChangeMillis = System.currentTimeMillis();
-//                }
-//            }
-//            if (expectedActivity && System.currentTimeMillis() - lastActivityChangeMillis > 20000L) {
-//                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Activity:" + activityName);
-//                triggerCause = MWT_TRIGGER_ACTIVITY_CHANGE;
-//                plugin.scheduleMWTTrigger(5000L);
-//            }
-//
-//            boolean expectedApp = false;
-//
-//            if (ACTION_AWARE_APPLICATIONS_FOREGROUND.equalsIgnoreCase(action)) {
-//                ContentValues contentValues = intent.getParcelableExtra(EXTRA_DATA);
-//                Log.d(TAG_AWARE_MWT, "[MWT] App: " + contentValues.toString());
-//
-//                String currentPackageName = contentValues.getAsString(PACKAGE_NAME);
-//                expectedApp = isExpectedSocialMediaPackage(currentPackageName);
-//
-//                if (!packageName.equals(currentPackageName)) {
-//                    packageName = currentPackageName;
-//                    lastAppChangeMillis = System.currentTimeMillis();
-//                }
-//            }
-//            if (expectedApp && System.currentTimeMillis() - lastAppChangeMillis > 60000L) {
-//                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] App");
-//                triggerCause = MWT_TRIGGER_SOCIAL_MEDIA;
-//                plugin.scheduleMWTTrigger(10000L);
-//            }
-//
-//            if (ACTION_AWARE_CALL_ACCEPTED.equalsIgnoreCase(action) || ACTION_AWARE_CALL_MADE.equalsIgnoreCase(action)) {
-//                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Call");
-//                triggerCause = MWT_TRIGGER_AFTER_CALL;
-//                plugin.scheduleMWTTrigger(5000L);
-//            }
-
         }
 
     }
@@ -775,30 +726,33 @@ public class Plugin extends Aware_Plugin {
 
         esmFactory.addESM(languageReceptivityLikert);
 
+        ESM_Radio commutingMediumRadio = new ESM_Radio();
+        commutingMediumRadio
+                .addRadio("By Bus")
+                .addRadio("By Taxi")
+                .addRadio("By MRT/Train")
+                .addRadio("Other")
+                .setTitle("Commuting Medium")
+                .setInstructions("What is your commuting medium now (within last 3 minutes)?")
+                .setSubmitButton("Next");
 
         switch (trigger) {
             case MWT_TRIGGER_VEHICLE_MIDDLE:
             case MWT_TRIGGER_VEHICLE_START:
-                ESM_Radio commutingMediumRadio = new ESM_Radio();
-
-                commutingMediumRadio
-                        .addRadio("By Bus")
-                        .addRadio("By Taxi")
-                        .addRadio("By MRT/Train")
+                ESM_Radio commutingRadio = new ESM_Radio();
+                commutingRadio
+                        .addRadio("By Bus/MRT/Taxi/Metro")
                         .addRadio("Not commuting")
                         .addRadio("Other")
-                        .setTitle("Commuting Medium")
-                        .setInstructions("What is your commuting medium now (within last 3 minutes)?")
-                        .setSubmitButton("Next/Ok")
-                ;
-                addTransportationQuestions(commutingMediumRadio, "By Bus");
-                addCommonQuestions(commutingMediumRadio, "By Bus");
-                addTransportationQuestions(commutingMediumRadio, "By Taxi");
-                addCommonQuestions(commutingMediumRadio, "By Taxi");
-                addTransportationQuestions(commutingMediumRadio, "By MRT/Train");
-                addCommonQuestions(commutingMediumRadio, "By MRT/Train");
+                        .addFlow("By Bus/MRT/Taxi/Metro", commutingMediumRadio.build())
+                        .setTitle("Commuting")
+                        .setInstructions("Are you commuting now (within last 3 minutes)?")
+                        .setSubmitButton("Next/Ok");
 
-                esmFactory.addESM(commutingMediumRadio);
+                addTransportationQuestions(commutingRadio, "By Bus/MRT/Taxi/Metro");
+                addCommonQuestions(commutingRadio, "By Bus/MRT/Taxi/Metro");
+
+                esmFactory.addESM(commutingRadio);
 
                 if (MWT_TRIGGER_VEHICLE_START.equalsIgnoreCase(trigger)) {
                     ESM_Radio waitingRadio = new ESM_Radio();
@@ -849,26 +803,19 @@ public class Plugin extends Aware_Plugin {
             case MWT_TRIGGER_MANUAL:
                 ESM_Radio mainActivityRadio = new ESM_Radio();
                 mainActivityRadio
-                        .addRadio("By Bus")
-                        .addRadio("By Taxi")
-                        .addRadio("By MRT/Train")
+                        .addRadio("By Bus/MRT/Taxi/Metro")
                         .addRadio("By Walking")
                         .addRadio("Taking Escalator/Lift")
                         .addRadio("Waiting for Commuting")
+                        .addRadio("Not commuting")
                         .addRadio("Other")
-                        .setTitle("Commuting Medium")
-                        .setInstructions("What is your commuting medium now (within last 3 minutes)?")
-                        .setSubmitButton("Next/Ok")
-                ;
+                        .addFlow("By Bus/MRT/Taxi/Metro", commutingMediumRadio.build())
+                        .setTitle("Commuting")
+                        .setInstructions("Are you commuting or waiting for commuting now (within last 3 minutes)?")
+                        .setSubmitButton("Next/Ok");
 
-                addTransportationQuestions(mainActivityRadio, "By Bus");
-                addCommonQuestions(mainActivityRadio, "By Bus");
-
-                addTransportationQuestions(mainActivityRadio, "By Taxi");
-                addCommonQuestions(mainActivityRadio, "By Taxi");
-
-                addTransportationQuestions(mainActivityRadio, "By MRT/Train");
-                addCommonQuestions(mainActivityRadio, "By MRT/Train");
+                addTransportationQuestions(mainActivityRadio, "By Bus/MRT/Taxi/Metro");
+                addCommonQuestions(mainActivityRadio, "By Bus/MRT/Taxi/Metro");
 
                 addWalkingQuestions(mainActivityRadio, "By Walking");
                 addCommonQuestions(mainActivityRadio, "By Walking");
@@ -1045,8 +992,8 @@ public class Plugin extends Aware_Plugin {
         ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
         visualAttentionConditionLikert
                 .setLikertMax(5)
-                .setLikertMaxLabel("Very Active")
-                .setLikertMinLabel("Very Tired")
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
                 .setTitle("Visual Attention")
                 .setInstructions("How much visual attention should you pay now?")
@@ -1060,10 +1007,41 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Physical Condition")
                 .setInstructions("What is your physical condition now?")
                 .setSubmitButton("Next");
-        ESM_PAM moodGrid = new ESM_PAM();
-        moodGrid
-                .setTitle("Mood")
-                .setInstructions("What is your mood right now? Choose the most appropriate image.")
+        ESM_Likert frustationLikert = new ESM_Likert();
+        frustationLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Not Frustrated at all")
+                .setLikertMinLabel("Very Frustrated")
+                .setLikertStep(1.0D)
+                .setTitle("Frustration")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert sadHappyLikert = new ESM_Likert();
+        sadHappyLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Happy")
+                .setLikertMinLabel("Very Sad")
+                .setLikertStep(1.0D)
+                .setTitle("Happiness")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert boredExcitedLikert = new ESM_Likert();
+        boredExcitedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Excited")
+                .setLikertMinLabel("Very Bored")
+                .setLikertStep(1.0D)
+                .setTitle("Excitement")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert tensedRelaxedLikert = new ESM_Likert();
+        tensedRelaxedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Relaxed")
+                .setLikertMinLabel("Very Tense")
+                .setLikertStep(1.0D)
+                .setTitle("Relaxation")
+                .setInstructions("How are you feeling now?")
                 .setSubmitButton("Next");
         ESM_Radio socialContextRadio = new ESM_Radio();
         socialContextRadio
@@ -1107,13 +1085,16 @@ public class Plugin extends Aware_Plugin {
         ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
         fillingActivitiesCheckbox
                 .addCheck("Listening to music")
-                .addCheck("Conversing (face to face / chatting)")
-                .addCheck("Observing surrounding")
-                .addCheck("Using mobile for leisure")
-                .addCheck("Exploring or searching")
-                .addCheck("Reading")
+                .addCheck("Watching videos")
+                .addCheck("Chatting / Messaging")
+                .addCheck("Conversing (face to face)")
+                .addCheck("Browsing / Searching online")
+                .addCheck("Reading books/articles/news")
+                .addCheck("Observing / Exploring / Checking surrounding")
+                .addCheck("Consuming food/drinks")
+                .addCheck("Pondering / Contemplating")
                 .addCheck("Working/Studying")
-                .addCheck("Consuming")
+                .addCheck("Doing Nothing")
                 .addCheck("Other")
                 .setTitle("Filling activities")
                 .setInstructions("What are your filling activities now?")
@@ -1141,7 +1122,10 @@ public class Plugin extends Aware_Plugin {
         esmRadio.addFlow(selectedOption, postureRadio.build());
         esmRadio.addFlow(selectedOption, visualAttentionConditionLikert.build());
         esmRadio.addFlow(selectedOption, physicalConditionLikert.build());
-        esmRadio.addFlow(selectedOption, moodGrid.build());
+        esmRadio.addFlow(selectedOption, frustationLikert.build());
+        esmRadio.addFlow(selectedOption, sadHappyLikert.build());
+        esmRadio.addFlow(selectedOption, boredExcitedLikert.build());
+        esmRadio.addFlow(selectedOption, tensedRelaxedLikert.build());
         esmRadio.addFlow(selectedOption, socialContextRadio.build());
         esmRadio.addFlow(selectedOption, crowdLikert.build());
         esmRadio.addFlow(selectedOption, noiseLikert.build());
@@ -1152,8 +1136,6 @@ public class Plugin extends Aware_Plugin {
     }
 
     private static void addCommonQuestions(ESMFactory esmFactory) throws JSONException {
-
-        // common
         ESM_Radio postureRadio = new ESM_Radio();
         postureRadio
                 .addRadio("Moving (e.g. walking/running)")
@@ -1167,8 +1149,8 @@ public class Plugin extends Aware_Plugin {
         ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
         visualAttentionConditionLikert
                 .setLikertMax(5)
-                .setLikertMaxLabel("Very Active")
-                .setLikertMinLabel("Very Tired")
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
                 .setTitle("Visual Attention")
                 .setInstructions("How much visual attention should you pay now?")
@@ -1182,10 +1164,41 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Physical Condition")
                 .setInstructions("What is your physical condition now?")
                 .setSubmitButton("Next");
-        ESM_PAM moodGrid = new ESM_PAM();
-        moodGrid
-                .setTitle("Mood")
-                .setInstructions("What is your mood right now? Choose the most appropriate image.")
+        ESM_Likert frustationLikert = new ESM_Likert();
+        frustationLikert
+                .setLikertMax(5)
+                .setLikertMaxLabel("Not Frustrated at all")
+                .setLikertMinLabel("Very Frustrated")
+                .setLikertStep(1.0D)
+                .setTitle("Frustration")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert sadHappyLikert = new ESM_Likert();
+        sadHappyLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Happy")
+                .setLikertMinLabel("Very Sad")
+                .setLikertStep(1.0D)
+                .setTitle("Happiness")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert boredExcitedLikert = new ESM_Likert();
+        boredExcitedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Excited")
+                .setLikertMinLabel("Very Bored")
+                .setLikertStep(1.0D)
+                .setTitle("Excitement")
+                .setInstructions("How are you feeling now?")
+                .setSubmitButton("Next");
+        ESM_Likert tensedRelaxedLikert = new ESM_Likert();
+        tensedRelaxedLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Relaxed")
+                .setLikertMinLabel("Very Tense")
+                .setLikertStep(1.0D)
+                .setTitle("Relaxation")
+                .setInstructions("How are you feeling now?")
                 .setSubmitButton("Next");
         ESM_Radio socialContextRadio = new ESM_Radio();
         socialContextRadio
@@ -1229,13 +1242,16 @@ public class Plugin extends Aware_Plugin {
         ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
         fillingActivitiesCheckbox
                 .addCheck("Listening to music")
-                .addCheck("Conversing (face to face / chatting)")
-                .addCheck("Observing surrounding")
-                .addCheck("Using mobile for leisure")
-                .addCheck("Exploring or searching")
-                .addCheck("Reading")
+                .addCheck("Watching videos")
+                .addCheck("Chatting / Messaging")
+                .addCheck("Conversing (face to face)")
+                .addCheck("Browsing / Searching online")
+                .addCheck("Reading books/articles/news")
+                .addCheck("Observing / Exploring / Checking surrounding")
+                .addCheck("Consuming food/drinks")
+                .addCheck("Pondering / Contemplating")
                 .addCheck("Working/Studying")
-                .addCheck("Consuming")
+                .addCheck("Doing Nothing")
                 .addCheck("Other")
                 .setTitle("Filling activities")
                 .setInstructions("What are your filling activities now?")
@@ -1263,7 +1279,10 @@ public class Plugin extends Aware_Plugin {
         esmFactory.addESM(postureRadio);
         esmFactory.addESM(visualAttentionConditionLikert);
         esmFactory.addESM(physicalConditionLikert);
-        esmFactory.addESM(moodGrid);
+        esmFactory.addESM(frustationLikert);
+        esmFactory.addESM(sadHappyLikert);
+        esmFactory.addESM(boredExcitedLikert);
+        esmFactory.addESM(tensedRelaxedLikert);
         esmFactory.addESM(socialContextRadio);
         esmFactory.addESM(crowdLikert);
         esmFactory.addESM(noiseLikert);
