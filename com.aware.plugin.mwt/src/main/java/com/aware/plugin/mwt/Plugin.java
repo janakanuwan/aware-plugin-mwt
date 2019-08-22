@@ -95,7 +95,7 @@ public class Plugin extends Aware_Plugin {
     private static final String MWT_TRIGGER_VEHICLE_MIDDLE = "TRIGGER_VEHICLE_MIDDLE";
     private static final String MWT_TRIGGER_ESCALATOR = "TRIGGER_ESCALATOR";
 
-    private static final long MINIMUM_ESM_GAP_IN_MILLIS = 15 * 60 * 1000L;
+    private static final long MINIMUM_ESM_GAP_IN_MILLIS = 10 * 60 * 1000L;
     private static final int ESM_NOTIFICATION_TIMEOUT_SECONDS = 300;
 
     private static final long MILLIS_IMMEDIATELY = 0;
@@ -109,6 +109,7 @@ public class Plugin extends Aware_Plugin {
     private static final long MILLIS_3_MINUTES = 3 * MILLIS_1_MINUTE;
     private static final long MILLIS_5_MINUTES = 5 * MILLIS_1_MINUTE;
     private static final long MILLIS_10_MINUTES = 10 * MILLIS_1_MINUTE;
+    private static final long MILLIS_15_MINUTES = 15 * MILLIS_1_MINUTE;
     private static final long MILLIS_20_MINUTES = 20 * MILLIS_1_MINUTE;
 
     private static final int MAX_ESM_COUNT_PER_DAY = 10;
@@ -493,14 +494,14 @@ public class Plugin extends Aware_Plugin {
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
+                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         lastEsmSeenMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
-                        if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
-                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
+                        if (currentTimeMillis - lastEsmMillis > MILLIS_15_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 15 min:" + activityName);
                             triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
                             plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                         }
@@ -508,7 +509,7 @@ public class Plugin extends Aware_Plugin {
                 }
             }
 
-            if (isStill(lastActivity) && isWalking(currentActivity)) {
+            if (isStillOrInVehicle(lastActivity) && isWalking(currentActivity)) {
                 if (activityChanged) {
                     if (currentTimeMillis - lastActivityChangeMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_2_MINUTES)) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
@@ -524,8 +525,8 @@ public class Plugin extends Aware_Plugin {
                         triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
                     } else {
-                        if (currentTimeMillis - lastEsmMillis > MILLIS_20_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
-                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 20 min:" + activityName);
+                        if (currentTimeMillis - lastEsmMillis > MILLIS_15_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 15 min:" + activityName);
                             triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
                             plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                         }
@@ -550,6 +551,10 @@ public class Plugin extends Aware_Plugin {
 
     private static boolean isStillOrWalking(int activityCode) {
         return isStill(activityCode) || isWalking(activityCode);
+    }
+
+    private static boolean isStillOrInVehicle(int activityCode){
+        return isStill(activityCode) || isInVehicle(activityCode);
     }
 
     private static boolean isInVehicle(int activityCode) {
@@ -1084,10 +1089,10 @@ public class Plugin extends Aware_Plugin {
         // filling
         ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
         fillingActivitiesCheckbox
-                .addCheck("Listening to music")
+                .addCheck("Listening to music/radio")
                 .addCheck("Watching videos")
                 .addCheck("Chatting / Messaging")
-                .addCheck("Conversing (face to face)")
+                .addCheck("Conversing (face to face/call)")
                 .addCheck("Browsing / Searching online")
                 .addCheck("Reading books/articles/news")
                 .addCheck("Observing / Exploring / Checking surrounding")
@@ -1241,10 +1246,10 @@ public class Plugin extends Aware_Plugin {
         // filling
         ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
         fillingActivitiesCheckbox
-                .addCheck("Listening to music")
+                .addCheck("Listening to music/radio")
                 .addCheck("Watching videos")
                 .addCheck("Chatting / Messaging")
-                .addCheck("Conversing (face to face)")
+                .addCheck("Conversing (face to face/call)")
                 .addCheck("Browsing / Searching online")
                 .addCheck("Reading books/articles/news")
                 .addCheck("Observing / Exploring / Checking surrounding")
