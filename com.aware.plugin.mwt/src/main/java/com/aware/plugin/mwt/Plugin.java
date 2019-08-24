@@ -21,6 +21,7 @@ import com.aware.ui.esms.ESM_Likert;
 import com.aware.ui.esms.ESM_Number;
 import com.aware.ui.esms.ESM_Radio;
 import com.aware.utils.Aware_Plugin;
+import com.aware.utils.Scheduler;
 
 import org.json.JSONException;
 
@@ -42,6 +43,8 @@ public class Plugin extends Aware_Plugin {
 
     public static final String ACTION_AWARE_PLUGIN_DEVICE_MWT = "ACTION_AWARE_PLUGIN_DEVICE_MWT";
     public static final String ACTION_AWARE_MWT_TRIGGER = "ACTION_AWARE_MWT_TRIGGER";
+
+    public static final String ACTION_AWARE_MWT_SCHDULE_CHECK = "ACTION_AWARE_MWT_SCHDULE_CHECK";
 
     private static final String ACTION_AWARE_MWT_TRIGGER_CAUSE = "ACTION_AWARE_MWT_TRIGGER_CAUSE";
     private static final String ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS = "ACTION_AWARE_MWT_TRIGGER_INIT_DELAY_MILLIS";
@@ -114,6 +117,9 @@ public class Plugin extends Aware_Plugin {
 
     private static final int MAX_ESM_COUNT_PER_DAY = 10;
 
+    public static final String MWT_DETECT_SCHEDULE_ID = "mwt_detect";
+    public static final int MWT_DETECT_CHECK_INTERVAL_MINUTES = 5;
+
     public static String activityName = "";
     private static String triggerCause = "";
     private static String packageName = "";
@@ -139,11 +145,27 @@ public class Plugin extends Aware_Plugin {
 
         intentFilter.addAction(ACTION_AWARE_ACTIVITY_ESCALATOR);
 
+        intentFilter.addAction(ACTION_AWARE_MWT_SCHDULE_CHECK);
+
         eventListener = new MwtListener(this);
         registerReceiver(eventListener, intentFilter);
 
         barometerListener = new BarometerListener(this);
         Barometer.setSensorObserver(barometerListener);
+
+        addScheduler();
+    }
+
+    private void addScheduler() {
+        try {
+            Scheduler.Schedule schedule = new Scheduler.Schedule(MWT_DETECT_SCHEDULE_ID);
+            schedule.setInterval(MWT_DETECT_CHECK_INTERVAL_MINUTES)
+                    .setActionType(Scheduler.ACTION_TYPE_BROADCAST)
+                    .setActionIntentAction(ACTION_AWARE_MWT_SCHDULE_CHECK);
+            Scheduler.saveSchedule(getApplicationContext(), schedule);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error in creating scheduler", e);
+        }
     }
 
     private void scheduleMWTTrigger(final long millis, final String triggerCause) {
@@ -185,6 +207,12 @@ public class Plugin extends Aware_Plugin {
 
         Barometer.setSensorObserver(null);
         this.barometerListener = null;
+
+        removeScheduler();
+    }
+
+    private void removeScheduler() {
+        Scheduler.removeSchedule(getApplicationContext(), MWT_DETECT_SCHEDULE_ID);
     }
 
     public void onCreate() {
@@ -474,7 +502,7 @@ public class Plugin extends Aware_Plugin {
 
 //                Toast.makeText(plugin.getApplicationContext(), newActivityName + ", " + confidence, Toast.LENGTH_LONG).show();
 
-                if (!newActivityName.equalsIgnoreCase(activityName) && confidence > 60) {
+                if (!newActivityName.equalsIgnoreCase(activityName) && confidence > 55) {
                     lastActivity = getActivityCode(activityName);
                     currentActivity = activity;
                     lastActivityChangeMillis = currentTimeMillis;
@@ -745,7 +773,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Voice input")
                 .addRadio("Multiple-choice question (MCQ)")
                 .addRadio("Digital Flash cards")
-                .addRadio("None")
+                .addRadio("Not applicable")
                 .addRadio("Other")
                 .setTitle("Review Method")
                 .setInstructions("What is your preferred method of reviewing words now?")
