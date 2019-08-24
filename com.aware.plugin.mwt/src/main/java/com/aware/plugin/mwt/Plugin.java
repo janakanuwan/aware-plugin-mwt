@@ -486,7 +486,7 @@ public class Plugin extends Aware_Plugin {
 
             if (isStillOrWalking(lastActivity) && isInVehicle(currentActivity)) {
                 if (activityChanged) {
-                    if (currentTimeMillis - lastActivityChangeMillis > MILLIS_30_SECONDS + getRandomMillis(MILLIS_90_SECONDS)) {
+                    if (currentTimeMillis - lastActivityChangeMillis > MILLIS_1_MINUTE) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
                         triggerCause = MWT_TRIGGER_VEHICLE_START;
                         plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
@@ -494,7 +494,7 @@ public class Plugin extends Aware_Plugin {
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
+                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_5_MINUTES) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         lastEsmSeenMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
@@ -511,7 +511,7 @@ public class Plugin extends Aware_Plugin {
 
             if (isStillOrInVehicle(lastActivity) && isWalking(currentActivity)) {
                 if (activityChanged) {
-                    if (currentTimeMillis - lastActivityChangeMillis > MILLIS_3_MINUTES + getRandomMillis(MILLIS_2_MINUTES)) {
+                    if (currentTimeMillis - lastActivityChangeMillis > MILLIS_3_MINUTES) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
                         triggerCause = MWT_TRIGGER_WALKING_START;
                         plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
@@ -519,7 +519,7 @@ public class Plugin extends Aware_Plugin {
                         activityChanged = false;
                     }
                 } else {
-                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_5_MINUTES + getRandomMillis(MILLIS_1_MINUTE)) {
+                    if (lastEsmMillis - lastEsmSeenMillis > MILLIS_5_MINUTES) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Did not answer:" + activityName);
                         lastEsmSeenMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
@@ -553,7 +553,7 @@ public class Plugin extends Aware_Plugin {
         return isStill(activityCode) || isWalking(activityCode);
     }
 
-    private static boolean isStillOrInVehicle(int activityCode){
+    private static boolean isStillOrInVehicle(int activityCode) {
         return isStill(activityCode) || isInVehicle(activityCode);
     }
 
@@ -716,20 +716,44 @@ public class Plugin extends Aware_Plugin {
     private static String getQuestionnaire(String trigger, int emsExpirationThresholdInSeconds) throws JSONException {
         ESMFactory esmFactory = new ESMFactory();
 
-        ESM_Likert languageReceptivityLikert = new ESM_Likert();
-        languageReceptivityLikert
+        ESM_Likert languageReceptivityPhoneLikert = new ESM_Likert();
+        languageReceptivityPhoneLikert
                 .setLikertMax(7)
                 .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
+                .setLikertMinLabel("Not at all")
                 .setLikertStep(1.0D)
-                .setTitle("Receptivity to Learn")
-                .setInstructions("How interested you are in learning a new language (vocabulary) now?")
+                .setTitle("Receptivity to Learn: Phone")
+                .setInstructions("How interested you are in learning a new language (vocabulary) now using PHONE?")
                 .setSubmitButton("Next")
                 .setTrigger(trigger)
                 .setExpirationThreshold(emsExpirationThresholdInSeconds)
                 .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
 
-        esmFactory.addESM(languageReceptivityLikert);
+        ESM_Likert languageReceptivityGlassLikert = new ESM_Likert();
+        languageReceptivityGlassLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Not at all")
+                .setLikertStep(1.0D)
+                .setTitle("Receptivity to Learn: Smart-Glass")
+                .setInstructions("How interested you are in learning a new language (vocabulary) now using SMART-GLASS?")
+                .setSubmitButton("Next");
+
+        ESM_Radio reviewMethodRadio = new ESM_Radio();
+        reviewMethodRadio
+                .addRadio("Typing")
+                .addRadio("Voice input")
+                .addRadio("Multiple-choice question (MCQ)")
+                .addRadio("Digital Flash cards")
+                .addRadio("None")
+                .addRadio("Other")
+                .setTitle("Review Method")
+                .setInstructions("What is your preferred method of reviewing words now?")
+                .setSubmitButton("Next");
+
+        esmFactory.addESM(languageReceptivityPhoneLikert);
+        esmFactory.addESM(languageReceptivityGlassLikert);
+        esmFactory.addESM(reviewMethodRadio);
 
         ESM_Radio commutingMediumRadio = new ESM_Radio();
         commutingMediumRadio
