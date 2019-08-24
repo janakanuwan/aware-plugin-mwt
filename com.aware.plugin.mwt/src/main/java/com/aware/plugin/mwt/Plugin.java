@@ -880,7 +880,7 @@ public class Plugin extends Aware_Plugin {
         languageReceptivityLikert
                 .setLikertMax(7)
                 .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
+                .setLikertMinLabel("Not at all")
                 .setLikertStep(1.0D)
                 .setTitle("Receptivity to Learn: Waiting")
                 .setInstructions("How were you willing to learn new vocabulary when you were waiting?")
