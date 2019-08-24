@@ -886,7 +886,15 @@ public class Plugin extends Aware_Plugin {
 
                 break;
             default:
-                addCommonQuestions(esmFactory);
+                ESM_Radio otherActivityRadio = new ESM_Radio();
+                otherActivityRadio
+                        .addRadio("Nothing")
+                        .addRadio("Other")
+                        .setTitle("Other Activities")
+                        .setInstructions("What are the activities you are doing now?")
+                        .setSubmitButton("Next/Ok");
+
+                addCommonQuestions(otherActivityRadio, "Other");
                 break;
         }
 
@@ -904,85 +912,13 @@ public class Plugin extends Aware_Plugin {
     }
 
     private static void addWaitingQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
-        ESM_Likert languageReceptivityLikert = new ESM_Likert();
-        languageReceptivityLikert
-                .setLikertMax(7)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Not at all")
-                .setLikertStep(1.0D)
-                .setTitle("Receptivity to Learn: Waiting")
-                .setInstructions("How were you willing to learn new vocabulary when you were waiting?")
-                .setSubmitButton("Next");
-
-        ESM_Radio postureRadio = new ESM_Radio();
-        postureRadio
-                .addRadio("Moving (e.g. walking/running)")
-                .addRadio("Standing")
-                .addRadio("Sitting")
-                .addRadio("Lying")
-                .addRadio("Other")
-                .setTitle("Body Posture: Waiting")
-                .setInstructions("What's your posture then?")
-                .setSubmitButton("Next");
-        ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
-        visualAttentionConditionLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Visual Attention: Waiting")
-                .setInstructions("How much visual attention did you pay during waiting?")
-                .setSubmitButton("Next");
-        ESM_Radio socialContextRadio = new ESM_Radio();
-        socialContextRadio
-                .addRadio("Alone")
-                .addRadio("Family members")
-                .addRadio("Friends")
-                .addRadio("Strangers")
-                .addRadio("Other")
-                .setTitle("Social Context: Waiting")
-                .setInstructions("Who were you with during waiting?")
-                .setSubmitButton("Next");
-        ESM_Likert crowdLikert = new ESM_Likert();
-        crowdLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Crowded")
-                .setLikertMinLabel("Not Crowded")
-                .setLikertStep(1.0D)
-                .setTitle("Crowdedness: Waiting")
-                .setInstructions("How crowded was your surrounding during waiting?")
-                .setSubmitButton("Next");
-        ESM_Likert noiseLikert = new ESM_Likert();
-        noiseLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Noisy")
-                .setLikertMinLabel("Very Quiet")
-                .setLikertStep(1.0D)
-                .setTitle("Noisiness: Waiting")
-                .setInstructions("How noisy was your surrounding during waiting?")
-                .setSubmitButton("Next");
-        ESM_Likert temperatureLikert = new ESM_Likert();
-        temperatureLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Too Cold")
-                .setLikertMinLabel("Too Hot")
-                .setLikertStep(1.0D)
-                .setTitle("Temperature: Waiting")
-                .setInstructions("How cold/hot was your surrounding during waiting?")
-                .setSubmitButton("Next");
         ESM_Number expectedTimeNumeric = new ESM_Number();
         expectedTimeNumeric.setTitle("Expected Time: Waiting")
                 .setInstructions("How long (minutes) did you wait for transportation?")
                 .setSubmitButton("Ok");
 
-        esmRadio.addFlow(selectedOption, languageReceptivityLikert.build());
-        esmRadio.addFlow(selectedOption, postureRadio.build());
-        esmRadio.addFlow(selectedOption, visualAttentionConditionLikert.build());
-        esmRadio.addFlow(selectedOption, socialContextRadio.build());
-        esmRadio.addFlow(selectedOption, crowdLikert.build());
-        esmRadio.addFlow(selectedOption, noiseLikert.build());
-        esmRadio.addFlow(selectedOption, temperatureLikert.build());
         esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
+        addBaseQuestions(esmRadio, selectedOption, " : Waiting", "during waiting");
     }
 
 
@@ -1036,6 +972,10 @@ public class Plugin extends Aware_Plugin {
     }
 
     private static void addCommonQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
+        addBaseQuestions(esmRadio, selectedOption, "", "now");
+    }
+
+    private static void addBaseQuestions(ESM_Radio esmRadio, String selectedOption, String scenario, String timeInfo) throws JSONException {
         ESM_Radio postureRadio = new ESM_Radio();
         postureRadio
                 .addRadio("Moving (e.g. walking/running)")
@@ -1043,8 +983,8 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Sitting")
                 .addRadio("Lying")
                 .addRadio("Other")
-                .setTitle("Body Posture")
-                .setInstructions("What's your posture?")
+                .setTitle("Body Posture" + scenario)
+                .setInstructions("What's your posture " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
         visualAttentionConditionLikert
@@ -1052,8 +992,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
-                .setTitle("Visual Attention")
-                .setInstructions("How much visual attention should you pay now?")
+                .setTitle("Visual Attention" + scenario)
+                .setInstructions("How much visual attention should you pay " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert physicalConditionLikert = new ESM_Likert();
         physicalConditionLikert
@@ -1061,8 +1001,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very Active")
                 .setLikertMinLabel("Very Tired")
                 .setLikertStep(1.0D)
-                .setTitle("Physical Condition")
-                .setInstructions("What is your physical condition now?")
+                .setTitle("Physical Condition" + scenario)
+                .setInstructions("What is your physical condition " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert frustationLikert = new ESM_Likert();
         frustationLikert
@@ -1070,8 +1010,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Not Frustrated at all")
                 .setLikertMinLabel("Very Frustrated")
                 .setLikertStep(1.0D)
-                .setTitle("Frustration")
-                .setInstructions("How are you feeling now?")
+                .setTitle("Frustration" + scenario)
+                .setInstructions("How are you feeling " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert sadHappyLikert = new ESM_Likert();
         sadHappyLikert
@@ -1079,8 +1019,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very Happy")
                 .setLikertMinLabel("Very Sad")
                 .setLikertStep(1.0D)
-                .setTitle("Happiness")
-                .setInstructions("How are you feeling now?")
+                .setTitle("Happiness" + scenario)
+                .setInstructions("How are you feeling " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert boredExcitedLikert = new ESM_Likert();
         boredExcitedLikert
@@ -1088,8 +1028,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very Excited")
                 .setLikertMinLabel("Very Bored")
                 .setLikertStep(1.0D)
-                .setTitle("Excitement")
-                .setInstructions("How are you feeling now?")
+                .setTitle("Excitement" + scenario)
+                .setInstructions("How are you feeling " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert tensedRelaxedLikert = new ESM_Likert();
         tensedRelaxedLikert
@@ -1097,8 +1037,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very Relaxed")
                 .setLikertMinLabel("Very Tense")
                 .setLikertStep(1.0D)
-                .setTitle("Relaxation")
-                .setInstructions("How are you feeling now?")
+                .setTitle("Relaxation" + scenario)
+                .setInstructions("How are you feeling " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Radio socialContextRadio = new ESM_Radio();
         socialContextRadio
@@ -1107,8 +1047,8 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Friends")
                 .addRadio("Strangers")
                 .addRadio("Other")
-                .setTitle("Social Context")
-                .setInstructions("Who are you with now?")
+                .setTitle("Social Context" + scenario)
+                .setInstructions("Who are you with " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert crowdLikert = new ESM_Likert();
         crowdLikert
@@ -1116,8 +1056,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very Crowded")
                 .setLikertMinLabel("Not Crowded")
                 .setLikertStep(1.0D)
-                .setTitle("Crowdedness")
-                .setInstructions("How crowded is your surrounding now?")
+                .setTitle("Crowdedness" + scenario)
+                .setInstructions("How crowded is your surrounding " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert noiseLikert = new ESM_Likert();
         noiseLikert
@@ -1125,8 +1065,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very Noisy")
                 .setLikertMinLabel("Very Quiet")
                 .setLikertStep(1.0D)
-                .setTitle("Noisiness")
-                .setInstructions("How noisy is your surrounding now?")
+                .setTitle("Noisiness" + scenario)
+                .setInstructions("How noisy is your surrounding " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert temperatureLikert = new ESM_Likert();
         temperatureLikert
@@ -1134,8 +1074,8 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Too Cold")
                 .setLikertMinLabel("Too Hot")
                 .setLikertStep(1.0D)
-                .setTitle("Temperature")
-                .setInstructions("How cold/hot is your surrounding now?")
+                .setTitle("Temperature" + scenario)
+                .setInstructions("How cold/hot is your surrounding " + timeInfo + "?")
                 .setSubmitButton("Next");
 
         // filling
@@ -1150,20 +1090,20 @@ public class Plugin extends Aware_Plugin {
                 .addCheck("Observing / Exploring / Checking surrounding")
                 .addCheck("Consuming food/drinks")
                 .addCheck("Pondering / Contemplating")
-                .addCheck("Working/Studying")
+                .addCheck("Working / Studying")
+                .addCheck("Relaxing / Sleeping")
                 .addCheck("Doing Nothing")
                 .addCheck("Other")
-                .setTitle("Filling activities")
-                .setInstructions("What are your filling activities now?")
+                .setTitle("Filling activities" + scenario)
+                .setInstructions("What are your filling activities " + timeInfo + "?")
                 .setSubmitButton("Next");
-
         ESM_Likert physicalDemandLikert = new ESM_Likert();
         physicalDemandLikert
                 .setLikertMax(5)
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
-                .setTitle("Physical Demand")
+                .setTitle("Physical Demand" + scenario)
                 .setInstructions("How physically demanding are those filling activities?")
                 .setSubmitButton("Next");
         ESM_Likert mentalDemandLikert = new ESM_Likert();
@@ -1172,9 +1112,21 @@ public class Plugin extends Aware_Plugin {
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
-                .setTitle("Mental Demand")
+                .setTitle("Mental Demand" + scenario)
                 .setInstructions("How mentally demanding are those filling activities?")
                 .setSubmitButton("Next/Ok");
+        ESM_Radio fillingActivityRadio = new ESM_Radio();
+        fillingActivityRadio
+                .addRadio("Yes")
+                .addRadio("No")
+                .addRadio("Other")
+                .setTitle("Filling activity" + scenario)
+                .setInstructions("Are you doing any filling activities (e.g. listen to music, mobile checking, reading, conversing, consuming, ...) " + timeInfo + "?")
+                .setSubmitButton("Next")
+                .addFlow("Yes", fillingActivitiesCheckbox.build())
+                .addFlow("Yes", physicalDemandLikert.build())
+                .addFlow("Yes", mentalDemandLikert.build());
+
 
         esmRadio.addFlow(selectedOption, postureRadio.build());
         esmRadio.addFlow(selectedOption, visualAttentionConditionLikert.build());
@@ -1187,166 +1139,7 @@ public class Plugin extends Aware_Plugin {
         esmRadio.addFlow(selectedOption, crowdLikert.build());
         esmRadio.addFlow(selectedOption, noiseLikert.build());
         esmRadio.addFlow(selectedOption, temperatureLikert.build());
-        esmRadio.addFlow(selectedOption, fillingActivitiesCheckbox.build());
-        esmRadio.addFlow(selectedOption, physicalDemandLikert.build());
-        esmRadio.addFlow(selectedOption, mentalDemandLikert.build());
-    }
-
-    private static void addCommonQuestions(ESMFactory esmFactory) throws JSONException {
-        ESM_Radio postureRadio = new ESM_Radio();
-        postureRadio
-                .addRadio("Moving (e.g. walking/running)")
-                .addRadio("Standing")
-                .addRadio("Sitting")
-                .addRadio("Lying")
-                .addRadio("Other")
-                .setTitle("Body Posture")
-                .setInstructions("What's your posture?")
-                .setSubmitButton("Next");
-        ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
-        visualAttentionConditionLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Visual Attention")
-                .setInstructions("How much visual attention should you pay now?")
-                .setSubmitButton("Next");
-        ESM_Likert physicalConditionLikert = new ESM_Likert();
-        physicalConditionLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Active")
-                .setLikertMinLabel("Very Tired")
-                .setLikertStep(1.0D)
-                .setTitle("Physical Condition")
-                .setInstructions("What is your physical condition now?")
-                .setSubmitButton("Next");
-        ESM_Likert frustationLikert = new ESM_Likert();
-        frustationLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Not Frustrated at all")
-                .setLikertMinLabel("Very Frustrated")
-                .setLikertStep(1.0D)
-                .setTitle("Frustration")
-                .setInstructions("How are you feeling now?")
-                .setSubmitButton("Next");
-        ESM_Likert sadHappyLikert = new ESM_Likert();
-        sadHappyLikert
-                .setLikertMax(7)
-                .setLikertMaxLabel("Very Happy")
-                .setLikertMinLabel("Very Sad")
-                .setLikertStep(1.0D)
-                .setTitle("Happiness")
-                .setInstructions("How are you feeling now?")
-                .setSubmitButton("Next");
-        ESM_Likert boredExcitedLikert = new ESM_Likert();
-        boredExcitedLikert
-                .setLikertMax(7)
-                .setLikertMaxLabel("Very Excited")
-                .setLikertMinLabel("Very Bored")
-                .setLikertStep(1.0D)
-                .setTitle("Excitement")
-                .setInstructions("How are you feeling now?")
-                .setSubmitButton("Next");
-        ESM_Likert tensedRelaxedLikert = new ESM_Likert();
-        tensedRelaxedLikert
-                .setLikertMax(7)
-                .setLikertMaxLabel("Very Relaxed")
-                .setLikertMinLabel("Very Tense")
-                .setLikertStep(1.0D)
-                .setTitle("Relaxation")
-                .setInstructions("How are you feeling now?")
-                .setSubmitButton("Next");
-        ESM_Radio socialContextRadio = new ESM_Radio();
-        socialContextRadio
-                .addRadio("Alone")
-                .addRadio("Family members")
-                .addRadio("Friends")
-                .addRadio("Strangers")
-                .addRadio("Other")
-                .setTitle("Social Context")
-                .setInstructions("Who are you with now?")
-                .setSubmitButton("Next");
-        ESM_Likert crowdLikert = new ESM_Likert();
-        crowdLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Crowded")
-                .setLikertMinLabel("Not Crowded")
-                .setLikertStep(1.0D)
-                .setTitle("Crowdedness")
-                .setInstructions("How crowded is your surrounding now?")
-                .setSubmitButton("Next");
-        ESM_Likert noiseLikert = new ESM_Likert();
-        noiseLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very Noisy")
-                .setLikertMinLabel("Very Quiet")
-                .setLikertStep(1.0D)
-                .setTitle("Noisiness")
-                .setInstructions("How noisy is your surrounding now?")
-                .setSubmitButton("Next");
-        ESM_Likert temperatureLikert = new ESM_Likert();
-        temperatureLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Too Cold")
-                .setLikertMinLabel("Too Hot")
-                .setLikertStep(1.0D)
-                .setTitle("Temperature")
-                .setInstructions("How cold/hot is your surrounding now?")
-                .setSubmitButton("Next");
-
-        // filling
-        ESM_Checkbox fillingActivitiesCheckbox = new ESM_Checkbox();
-        fillingActivitiesCheckbox
-                .addCheck("Listening to music/radio")
-                .addCheck("Watching videos")
-                .addCheck("Chatting / Messaging")
-                .addCheck("Conversing (face to face/call)")
-                .addCheck("Browsing / Searching online")
-                .addCheck("Reading books/articles/news")
-                .addCheck("Observing / Exploring / Checking surrounding")
-                .addCheck("Consuming food/drinks")
-                .addCheck("Pondering / Contemplating")
-                .addCheck("Working/Studying")
-                .addCheck("Doing Nothing")
-                .addCheck("Other")
-                .setTitle("Filling activities")
-                .setInstructions("What are your filling activities now?")
-                .setSubmitButton("Next");
-
-        ESM_Likert physicalDemandLikert = new ESM_Likert();
-        physicalDemandLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Physical Demand")
-                .setInstructions("How physically demanding are those filling activities?")
-                .setSubmitButton("Next");
-        ESM_Likert mentalDemandLikert = new ESM_Likert();
-        mentalDemandLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Mental Demand")
-                .setInstructions("How mentally demanding are those filling activities?")
-                .setSubmitButton("Next/Ok");
-
-        esmFactory.addESM(postureRadio);
-        esmFactory.addESM(visualAttentionConditionLikert);
-        esmFactory.addESM(physicalConditionLikert);
-        esmFactory.addESM(frustationLikert);
-        esmFactory.addESM(sadHappyLikert);
-        esmFactory.addESM(boredExcitedLikert);
-        esmFactory.addESM(tensedRelaxedLikert);
-        esmFactory.addESM(socialContextRadio);
-        esmFactory.addESM(crowdLikert);
-        esmFactory.addESM(noiseLikert);
-        esmFactory.addESM(temperatureLikert);
-        esmFactory.addESM(fillingActivitiesCheckbox);
-        esmFactory.addESM(physicalDemandLikert);
-        esmFactory.addESM(mentalDemandLikert);
+        esmRadio.addFlow(selectedOption, fillingActivityRadio.build());
     }
 
 
