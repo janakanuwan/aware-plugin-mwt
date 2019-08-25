@@ -744,6 +744,20 @@ public class Plugin extends Aware_Plugin {
     private static String getQuestionnaire(String trigger, int emsExpirationThresholdInSeconds) throws JSONException {
         ESMFactory esmFactory = new ESMFactory();
 
+        ESM_Likert languageReceptivityLikert = new ESM_Likert();
+        languageReceptivityLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Not at all")
+                .setLikertStep(1.0D)
+                .setTitle("Receptivity to Learn")
+                .setInstructions("How interested you are in learning a new language (vocabulary) now?")
+                .setSubmitButton("Next")
+                .setTrigger(trigger)
+                .setExpirationThreshold(emsExpirationThresholdInSeconds)
+                .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
+
+
         ESM_Likert languageReceptivityPhoneLikert = new ESM_Likert();
         languageReceptivityPhoneLikert
                 .setLikertMax(7)
@@ -752,10 +766,7 @@ public class Plugin extends Aware_Plugin {
                 .setLikertStep(1.0D)
                 .setTitle("Receptivity to Learn: Phone")
                 .setInstructions("How interested you are in learning a new language (vocabulary) now using PHONE?")
-                .setSubmitButton("Next")
-                .setTrigger(trigger)
-                .setExpirationThreshold(emsExpirationThresholdInSeconds)
-                .setNotificationTimeout(ESM_NOTIFICATION_TIMEOUT_SECONDS);
+                .setSubmitButton("Next");
 
         ESM_Likert languageReceptivityGlassLikert = new ESM_Likert();
         languageReceptivityGlassLikert
@@ -779,6 +790,7 @@ public class Plugin extends Aware_Plugin {
                 .setInstructions("What is your preferred method of reviewing words now?")
                 .setSubmitButton("Next");
 
+        esmFactory.addESM(languageReceptivityLikert);
         esmFactory.addESM(languageReceptivityPhoneLikert);
         esmFactory.addESM(languageReceptivityGlassLikert);
         esmFactory.addESM(reviewMethodRadio);
@@ -915,9 +927,57 @@ public class Plugin extends Aware_Plugin {
         ESM_Number expectedTimeNumeric = new ESM_Number();
         expectedTimeNumeric.setTitle("Expected Time: Waiting")
                 .setInstructions("How long (minutes) did you wait for transportation?")
-                .setSubmitButton("Ok");
+                .setSubmitButton("Next");
+
+        ESM_Likert languageReceptivityLikert = new ESM_Likert();
+        languageReceptivityLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Not at all")
+                .setLikertStep(1.0D)
+                .setTitle("Receptivity to Learn: Waiting")
+                .setInstructions("How interested were in learning a new language (vocabulary) during waiting?")
+                .setSubmitButton("Next");
+
+
+        ESM_Likert languageReceptivityPhoneLikert = new ESM_Likert();
+        languageReceptivityPhoneLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Not at all")
+                .setLikertStep(1.0D)
+                .setTitle("Receptivity to Learn: Waiting : Phone")
+                .setInstructions("How interested were in learning a new language (vocabulary) during waiting using PHONE?")
+                .setSubmitButton("Next");
+
+        ESM_Likert languageReceptivityGlassLikert = new ESM_Likert();
+        languageReceptivityGlassLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very High")
+                .setLikertMinLabel("Not at all")
+                .setLikertStep(1.0D)
+                .setTitle("Receptivity to Learn: Waiting : Smart-Glass")
+                .setInstructions("How interested were in learning a new language (vocabulary) during waiting using SMART-GLASS?")
+                .setSubmitButton("Next");
+
+        ESM_Radio reviewMethodRadio = new ESM_Radio();
+        reviewMethodRadio
+                .addRadio("Typing")
+                .addRadio("Voice input")
+                .addRadio("Multiple-choice question (MCQ)")
+                .addRadio("Digital Flash cards")
+                .addRadio("Not applicable")
+                .addRadio("Other")
+                .setTitle("Review Method: Waiting")
+                .setInstructions("What is your preferred method of reviewing words now?")
+                .setSubmitButton("Next");
 
         esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
+        esmRadio.addFlow(selectedOption, languageReceptivityLikert.build());
+        esmRadio.addFlow(selectedOption, languageReceptivityPhoneLikert.build());
+        esmRadio.addFlow(selectedOption, languageReceptivityGlassLikert.build());
+        esmRadio.addFlow(selectedOption, reviewMethodRadio.build());
+
         addBaseQuestions(esmRadio, selectedOption, " : Waiting", "during waiting");
     }
 
