@@ -14,6 +14,7 @@ import android.util.Log;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.Barometer;
+import com.aware.Locations;
 import com.aware.ESM;
 import com.aware.ui.esms.ESMFactory;
 import com.aware.ui.esms.ESM_Checkbox;
@@ -77,7 +78,8 @@ public class Plugin extends Aware_Plugin {
     private static final String ACTION_AWARE_ESM_QUEUE_STARTED = "ACTION_AWARE_ESM_QUEUE_STARTED";
 
     private static final String ACTION_AWARE_ACTIVITY_ESCALATOR = "ACTION_AWARE_ACTIVITY_ESCALATOR";
-    private static final String AMBIENT_PRESSURE = "double_values_0";
+
+    private static final String ACTION_AWARE_ACTIVITY_VEHICLE_SPEED = "ACTION_AWARE_ACTIVITY_VEHICLE_SPEED";
 
     private static final String APPLICATION_NAME = "application_name";
     private static final String EXTRA_ACTIVITY = "activity";
@@ -129,6 +131,7 @@ public class Plugin extends Aware_Plugin {
 
     private MwtListener eventListener;
     private BarometerListener barometerListener;
+    private LocationsListener locationsListener;
 
     private void registerEventListener() {
         IntentFilter intentFilter = new IntentFilter();
@@ -147,11 +150,16 @@ public class Plugin extends Aware_Plugin {
 
         intentFilter.addAction(ACTION_AWARE_MWT_SCHDULE_CHECK);
 
+        intentFilter.addAction(ACTION_AWARE_ACTIVITY_VEHICLE_SPEED);
+
         eventListener = new MwtListener(this);
         registerReceiver(eventListener, intentFilter);
 
         barometerListener = new BarometerListener(this);
         Barometer.setSensorObserver(barometerListener);
+
+        locationsListener = new LocationsListener(this);
+        Locations.setSensorObserver(locationsListener);
 
         addScheduler();
     }
@@ -207,6 +215,9 @@ public class Plugin extends Aware_Plugin {
 
         Barometer.setSensorObserver(null);
         this.barometerListener = null;
+
+        Locations.setSensorObserver(null);
+        this.locationsListener = null;
 
         removeScheduler();
     }
@@ -447,6 +458,7 @@ public class Plugin extends Aware_Plugin {
         private long lastAppChangeMillis = 0L;
         private static long lastActivityChangeMillis = 0L;
         private long lastEscalatorTime = 0L;
+        private long lastVehicleMillis = 0L;
 
         private MwtListener(Plugin plugin) {
             this.plugin = plugin;
@@ -489,6 +501,17 @@ public class Plugin extends Aware_Plugin {
                 plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
             }
 
+            if (ACTION_AWARE_ACTIVITY_VEHICLE_SPEED.equalsIgnoreCase(action)) {
+//                Toast.makeText(plugin.getApplicationContext(), "Location Speed", Toast.LENGTH_SHORT).show();
+                if (currentTimeMillis - lastVehicleMillis < MILLIS_5_MINUTES) {
+                    return;
+                }
+                lastVehicleMillis = currentTimeMillis;
+                Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Locations Speed");
+                triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
+                plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
+            }
+
             if (ACTION_AWARE_ESM_QUEUE_STARTED.equalsIgnoreCase(action)) {
                 lastEsmSeenMillis = currentTimeMillis;
                 esmSeenCount.getAndIncrement();
@@ -512,13 +535,13 @@ public class Plugin extends Aware_Plugin {
                 }
             }
 
-            if (isStillOrWalking(lastActivity) && isInVehicle(currentActivity)) {
+
+            if (isStillOrWalkingOrVehicle(lastActivity) && isInVehicle(currentActivity)) {
                 if (activityChanged) {
                     if (currentTimeMillis - lastActivityChangeMillis > MILLIS_1_MINUTE) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
                         triggerCause = MWT_TRIGGER_VEHICLE_START;
                         plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
-
                         activityChanged = false;
                     }
                 } else {
@@ -527,23 +550,20 @@ public class Plugin extends Aware_Plugin {
                         lastEsmSeenMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
-                    } else {
-                        if (currentTimeMillis - lastEsmMillis > MILLIS_15_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
-                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 15 min:" + activityName);
-                            triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
-                            plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
-                        }
+                    } else if (currentTimeMillis - lastEsmMillis > MILLIS_15_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                        Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 15 min:" + activityName);
+                        triggerCause = MWT_TRIGGER_VEHICLE_MIDDLE;
+                        plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                     }
                 }
             }
 
-            if (isStillOrInVehicle(lastActivity) && isWalking(currentActivity)) {
+            if (isStillOrWalking(lastActivity) && isWalking(currentActivity)) {
                 if (activityChanged) {
                     if (currentTimeMillis - lastActivityChangeMillis > MILLIS_3_MINUTES) {
                         Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time:" + activityName);
                         triggerCause = MWT_TRIGGER_WALKING_START;
                         plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
-
                         activityChanged = false;
                     }
                 } else {
@@ -552,12 +572,10 @@ public class Plugin extends Aware_Plugin {
                         lastEsmSeenMillis = currentTimeMillis;
                         triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
                         plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
-                    } else {
-                        if (currentTimeMillis - lastEsmMillis > MILLIS_15_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
-                            Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 15 min:" + activityName);
-                            triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
-                            plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
-                        }
+                    } else if (currentTimeMillis - lastEsmMillis > MILLIS_15_MINUTES + getRandomMillis(MILLIS_10_MINUTES)) {
+                        Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] Same activity more than 15 min:" + activityName);
+                        triggerCause = MWT_TRIGGER_WALKING_MIDDLE;
+                        plugin.scheduleMWTTrigger(MILLIS_ASAP, triggerCause);
                     }
                 }
             }
@@ -577,12 +595,12 @@ public class Plugin extends Aware_Plugin {
 
     }
 
-    private static boolean isStillOrWalking(int activityCode) {
-        return isStill(activityCode) || isWalking(activityCode);
+    private static boolean isStillOrWalkingOrVehicle(int activityCode) {
+        return isStillOrWalking(activityCode) || isInVehicle(activityCode);
     }
 
-    private static boolean isStillOrInVehicle(int activityCode) {
-        return isStill(activityCode) || isInVehicle(activityCode);
+    private static boolean isStillOrWalking(int activityCode) {
+        return isStill(activityCode) || isWalking(activityCode);
     }
 
     private static boolean isInVehicle(int activityCode) {
@@ -672,6 +690,8 @@ public class Plugin extends Aware_Plugin {
     private static class BarometerListener implements Barometer.AWARESensorObserver {
         private static final String TAG_AWARE_MWT = "AWARE::MWT";
 
+        private static final String AMBIENT_PRESSURE = "double_values_0";
+
         private static final int MAX_PRESSURE_BUFFER_SIZE = 256;
 
         private static final float DELTA = 1.0f;
@@ -737,6 +757,29 @@ public class Plugin extends Aware_Plugin {
 //            Log.d(TAG_AWARE_MWT, "Diff Tot:" + tot);
 
             return diffTot >= THRESHOLD || diffTot <= -THRESHOLD;
+        }
+    }
+
+    private static class LocationsListener implements Locations.AWARESensorObserver {
+        private static final String TAG_AWARE_MWT = "AWARE::MWT";
+        private static final String SPEED = "double_speed";
+
+        private static final double SPEED_THRESHOLD = 5;
+
+        private final Plugin plugin;
+
+        private LocationsListener(Plugin plugin) {
+            this.plugin = plugin;
+        }
+
+        @Override
+        public synchronized void onLocationChanged(ContentValues data) {
+            double speed = data.getAsDouble(SPEED);
+
+//            Log.d(TAG_AWARE_MWT, "[LOCATIONS] speed:" + speed);
+            if (speed > SPEED_THRESHOLD) {
+                plugin.sendBroadcast(new Intent(ACTION_AWARE_ACTIVITY_VEHICLE_SPEED));
+            }
         }
     }
 
