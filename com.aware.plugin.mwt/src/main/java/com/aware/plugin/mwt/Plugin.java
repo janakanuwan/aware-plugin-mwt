@@ -116,6 +116,7 @@ public class Plugin extends Aware_Plugin {
     private static final long MILLIS_10_MINUTES = 10 * MILLIS_1_MINUTE;
     private static final long MILLIS_15_MINUTES = 15 * MILLIS_1_MINUTE;
     private static final long MILLIS_20_MINUTES = 20 * MILLIS_1_MINUTE;
+    private static final long MILLIS_1_HOUR = 60 * MILLIS_1_MINUTE;
 
     private static final int MAX_ESM_COUNT_PER_DAY = 10;
 
@@ -503,7 +504,7 @@ public class Plugin extends Aware_Plugin {
 
             if (ACTION_AWARE_ACTIVITY_VEHICLE_SPEED.equalsIgnoreCase(action)) {
 //                Toast.makeText(plugin.getApplicationContext(), "Location Speed", Toast.LENGTH_SHORT).show();
-                if (currentTimeMillis - lastVehicleMillis < MILLIS_5_MINUTES) {
+                if (currentTimeMillis - lastVehicleMillis < MILLIS_10_MINUTES) {
                     return;
                 }
                 lastVehicleMillis = currentTimeMillis;
@@ -533,6 +534,20 @@ public class Plugin extends Aware_Plugin {
                     activityName = newActivityName;
                     activityChanged = true;
                 }
+            }
+
+
+            if (isInVehicle(currentActivity)) {
+                if (currentTimeMillis - lastVehicleMillis > MILLIS_1_HOUR) {
+                    Log.i(TAG_AWARE_MWT, "[MWT TRIGGER] First Time after long time:" + activityName);
+                    triggerCause = MWT_TRIGGER_VEHICLE_START;
+                    plugin.scheduleMWTTrigger(MILLIS_IMMEDIATELY, triggerCause);
+
+                    activityChanged = false;
+                    lastVehicleMillis = currentTimeMillis;
+                    return;
+                }
+                lastVehicleMillis = currentTimeMillis;
             }
 
 
@@ -1012,7 +1027,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("Not applicable")
                 .addRadio("Other")
                 .setTitle("Review Method: Waiting")
-                .setInstructions("What is your preferred method of reviewing words now?")
+                .setInstructions("What would have been your preferred method of reviewing words during waiting?")
                 .setSubmitButton("Next");
 
         esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
@@ -1028,9 +1043,9 @@ public class Plugin extends Aware_Plugin {
     private static void addWalkingQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
         ESM_Likert urgencyLikert = new ESM_Likert();
         urgencyLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very Urgent")
-                .setLikertMinLabel("Not Urgent")
+                .setLikertMinLabel("Not Urgent at all")
                 .setLikertStep(1.0D)
                 .setTitle("Urgency")
                 .setInstructions("How urgent it is for you to arrive your destination?")
@@ -1041,9 +1056,9 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert familiarityLikert = new ESM_Likert();
         familiarityLikert
-                .setLikertMax(5)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Familiar")
+                .setLikertMinLabel("Not Familiar at all")
                 .setLikertStep(1.0D)
                 .setTitle("Familiarity")
                 .setInstructions("How familiar are you with the road?")
@@ -1057,16 +1072,16 @@ public class Plugin extends Aware_Plugin {
     private static void addEscalatorQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
         ESM_Likert urgencyLikert = new ESM_Likert();
         urgencyLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very Urgent")
-                .setLikertMinLabel("Not Urgent")
+                .setLikertMinLabel("Not Urgent at all")
                 .setLikertStep(1.0D)
                 .setTitle("Urgency")
                 .setInstructions("How urgent it is for you to arrive your destination?")
                 .setSubmitButton("Next");
         ESM_Number expectedTimeNumeric = new ESM_Number();
         expectedTimeNumeric.setTitle("Expected Time: Escalator")
-                .setInstructions("HHow long (minutes) do you think it will take for you to get off")
+                .setInstructions("How long (minutes) do you think it will take for you to get off")
                 .setSubmitButton("Next");
 
         esmRadio.addFlow(selectedOption, urgencyLikert.build());
@@ -1091,7 +1106,7 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert visualAttentionConditionLikert = new ESM_Likert();
         visualAttentionConditionLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
@@ -1100,7 +1115,7 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert physicalConditionLikert = new ESM_Likert();
         physicalConditionLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very Active")
                 .setLikertMinLabel("Very Tired")
                 .setLikertStep(1.0D)
@@ -1109,7 +1124,7 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert frustationLikert = new ESM_Likert();
         frustationLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Not Frustrated at all")
                 .setLikertMinLabel("Very Frustrated")
                 .setLikertStep(1.0D)
@@ -1155,16 +1170,16 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert crowdLikert = new ESM_Likert();
         crowdLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very Crowded")
-                .setLikertMinLabel("Not Crowded")
+                .setLikertMinLabel("Very Empty")
                 .setLikertStep(1.0D)
                 .setTitle("Crowdedness" + scenario)
                 .setInstructions("How crowded is your surrounding " + timeInfo + "?")
                 .setSubmitButton("Next");
         ESM_Likert noiseLikert = new ESM_Likert();
         noiseLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very Noisy")
                 .setLikertMinLabel("Very Quiet")
                 .setLikertStep(1.0D)
@@ -1173,7 +1188,7 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert temperatureLikert = new ESM_Likert();
         temperatureLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Too Cold")
                 .setLikertMinLabel("Too Hot")
                 .setLikertStep(1.0D)
@@ -1202,7 +1217,7 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert physicalDemandLikert = new ESM_Likert();
         physicalDemandLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
@@ -1211,7 +1226,7 @@ public class Plugin extends Aware_Plugin {
                 .setSubmitButton("Next");
         ESM_Likert mentalDemandLikert = new ESM_Likert();
         mentalDemandLikert
-                .setLikertMax(5)
+                .setLikertMax(7)
                 .setLikertMaxLabel("Very High")
                 .setLikertMinLabel("Very Low")
                 .setLikertStep(1.0D)
