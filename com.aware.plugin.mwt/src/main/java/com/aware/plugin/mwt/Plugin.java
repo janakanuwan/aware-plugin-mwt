@@ -1094,6 +1094,15 @@ public class Plugin extends Aware_Plugin {
     }
 
     private static void addBaseQuestions(ESM_Radio esmRadio, String selectedOption, String scenario, String timeInfo) throws JSONException {
+        ESM_Radio handAvailabilityRadio = new ESM_Radio();
+        handAvailabilityRadio
+                .addRadio("Not carrying/holding anything")
+                .addRadio("Only the dominant hand is carrying/holding items")
+                .addRadio("Only the non-dominant hand is carrying/holding items")
+                .addRadio("Both hands are carrying/holding things")
+                .setTitle("Availability of Hands" + scenario)
+                .setInstructions("Are you carrying/holding things (except mobile) in your hands " + timeInfo + "?")
+                .setSubmitButton("Next");
         ESM_Radio postureRadio = new ESM_Radio();
         postureRadio
                 .addRadio("Moving (e.g. walking/running)")
@@ -1246,6 +1255,7 @@ public class Plugin extends Aware_Plugin {
                 .addFlow("Yes", mentalDemandLikert.build());
 
 
+        esmRadio.addFlow(selectedOption, handAvailabilityRadio.build());
         esmRadio.addFlow(selectedOption, postureRadio.build());
         esmRadio.addFlow(selectedOption, visualAttentionConditionLikert.build());
         esmRadio.addFlow(selectedOption, physicalConditionLikert.build());
