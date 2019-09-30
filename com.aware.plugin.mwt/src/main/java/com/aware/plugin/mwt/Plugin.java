@@ -858,6 +858,7 @@ public class Plugin extends Aware_Plugin {
                 .addRadio("By Bus")
                 .addRadio("By Taxi")
                 .addRadio("By MRT/Train")
+                .addRadio("By Car")
                 .addRadio("Other")
                 .setTitle("Commuting Medium")
                 .setInstructions("What is your commuting medium now (within last 3 minutes)?")
@@ -868,16 +869,16 @@ public class Plugin extends Aware_Plugin {
             case MWT_TRIGGER_VEHICLE_START:
                 ESM_Radio commutingRadio = new ESM_Radio();
                 commutingRadio
-                        .addRadio("By Bus/MRT/Taxi/Metro")
+                        .addRadio("By Bus/MRT/Taxi/Metro/Car")
                         .addRadio("Not commuting")
                         .addRadio("Other")
-                        .addFlow("By Bus/MRT/Taxi/Metro", commutingMediumRadio.build())
+                        .addFlow("By Bus/MRT/Taxi/Metro/Car", commutingMediumRadio.build())
                         .setTitle("Commuting")
                         .setInstructions("Are you commuting now (within last 3 minutes)?")
                         .setSubmitButton("Next/Ok");
 
-                addTransportationQuestions(commutingRadio, "By Bus/MRT/Taxi/Metro");
-                addCommonQuestions(commutingRadio, "By Bus/MRT/Taxi/Metro");
+                addTransportationQuestions(commutingRadio, "By Bus/MRT/Taxi/Metro/Car");
+                addCommonQuestions(commutingRadio, "By Bus/MRT/Taxi/Metro/Car");
 
                 esmFactory.addESM(commutingRadio);
 
@@ -930,25 +931,25 @@ public class Plugin extends Aware_Plugin {
             case MWT_TRIGGER_MANUAL:
                 ESM_Radio mainActivityRadio = new ESM_Radio();
                 mainActivityRadio
-                        .addRadio("By Bus/MRT/Taxi/Metro")
+                        .addRadio("By Bus/MRT/Taxi/Metro/Car")
                         .addRadio("By Walking")
-                        .addRadio("Taking Escalator/Lift")
+//                        .addRadio("Taking Escalator/Lift")
                         .addRadio("Waiting for Commuting")
                         .addRadio("Not commuting")
                         .addRadio("Other")
-                        .addFlow("By Bus/MRT/Taxi/Metro", commutingMediumRadio.build())
+                        .addFlow("By Bus/MRT/Taxi/Metro/Car", commutingMediumRadio.build())
                         .setTitle("Commuting")
                         .setInstructions("Are you commuting or waiting for commuting now (within last 3 minutes)?")
                         .setSubmitButton("Next/Ok");
 
-                addTransportationQuestions(mainActivityRadio, "By Bus/MRT/Taxi/Metro");
-                addCommonQuestions(mainActivityRadio, "By Bus/MRT/Taxi/Metro");
+                addTransportationQuestions(mainActivityRadio, "By Bus/MRT/Taxi/Metro/Car");
+                addCommonQuestions(mainActivityRadio, "By Bus/MRT/Taxi/Metro/Car");
 
                 addWalkingQuestions(mainActivityRadio, "By Walking");
                 addCommonQuestions(mainActivityRadio, "By Walking");
 
-                addEscalatorQuestions(mainActivityRadio, "Taking Escalator/Lift");
-                addCommonQuestions(mainActivityRadio, "Taking Escalator/Lift");
+//                addEscalatorQuestions(mainActivityRadio, "Taking Escalator/Lift");
+//                addCommonQuestions(mainActivityRadio, "Taking Escalator/Lift");
 
                 addWaitingQuestions(mainActivityRadio, "Waiting for Commuting");
 
@@ -973,12 +974,32 @@ public class Plugin extends Aware_Plugin {
 
 
     private static void addTransportationQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
+        ESM_Likert urgencyLikert = new ESM_Likert();
+        urgencyLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Urgent")
+                .setLikertMinLabel("Not Urgent at all")
+                .setLikertStep(1.0D)
+                .setTitle("Urgency")
+                .setInstructions("How urgent it is for you to arrive your destination?")
+                .setSubmitButton("Next");
         ESM_Number expectedTimeNumeric = new ESM_Number();
         expectedTimeNumeric.setTitle("Expected Time: Transportation")
                 .setInstructions("How long (minutes) do you think it will take for you to get off?")
                 .setSubmitButton("Next");
+        ESM_Likert familiarityLikert = new ESM_Likert();
+        familiarityLikert
+                .setLikertMax(7)
+                .setLikertMaxLabel("Very Familiar")
+                .setLikertMinLabel("Not Familiar at all")
+                .setLikertStep(1.0D)
+                .setTitle("Familiarity")
+                .setInstructions("How familiar are you with the route?")
+                .setSubmitButton("Next");
 
+        esmRadio.addFlow(selectedOption, urgencyLikert.build());
         esmRadio.addFlow(selectedOption, expectedTimeNumeric.build());
+        esmRadio.addFlow(selectedOption, familiarityLikert.build());
     }
 
     private static void addWaitingQuestions(ESM_Radio esmRadio, String selectedOption) throws JSONException {
@@ -1224,24 +1245,24 @@ public class Plugin extends Aware_Plugin {
                 .setTitle("Filling activities" + scenario)
                 .setInstructions("What are your filling activities " + timeInfo + "?")
                 .setSubmitButton("Next");
-        ESM_Likert physicalDemandLikert = new ESM_Likert();
-        physicalDemandLikert
-                .setLikertMax(7)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Physical Demand" + scenario)
-                .setInstructions("How physically demanding are those filling activities?")
-                .setSubmitButton("Next");
-        ESM_Likert mentalDemandLikert = new ESM_Likert();
-        mentalDemandLikert
-                .setLikertMax(7)
-                .setLikertMaxLabel("Very High")
-                .setLikertMinLabel("Very Low")
-                .setLikertStep(1.0D)
-                .setTitle("Mental Demand" + scenario)
-                .setInstructions("How mentally demanding are those filling activities?")
-                .setSubmitButton("Next/Ok");
+//        ESM_Likert physicalDemandLikert = new ESM_Likert();
+//        physicalDemandLikert
+//                .setLikertMax(7)
+//                .setLikertMaxLabel("Very High")
+//                .setLikertMinLabel("Very Low")
+//                .setLikertStep(1.0D)
+//                .setTitle("Physical Demand" + scenario)
+//                .setInstructions("How physically demanding are those filling activities?")
+//                .setSubmitButton("Next");
+//        ESM_Likert mentalDemandLikert = new ESM_Likert();
+//        mentalDemandLikert
+//                .setLikertMax(7)
+//                .setLikertMaxLabel("Very High")
+//                .setLikertMinLabel("Very Low")
+//                .setLikertStep(1.0D)
+//                .setTitle("Mental Demand" + scenario)
+//                .setInstructions("How mentally demanding are those filling activities?")
+//                .setSubmitButton("Next/Ok");
         ESM_Radio fillingActivityRadio = new ESM_Radio();
         fillingActivityRadio
                 .addRadio("Yes")
@@ -1251,8 +1272,9 @@ public class Plugin extends Aware_Plugin {
                 .setInstructions("Are you doing any filling activities (e.g. listen to music, mobile checking, reading, conversing, consuming, ...) " + timeInfo + "?")
                 .setSubmitButton("Next")
                 .addFlow("Yes", fillingActivitiesCheckbox.build())
-                .addFlow("Yes", physicalDemandLikert.build())
-                .addFlow("Yes", mentalDemandLikert.build());
+//                .addFlow("Yes", physicalDemandLikert.build())
+//                .addFlow("Yes", mentalDemandLikert.build())
+        ;
 
 
         esmRadio.addFlow(selectedOption, handAvailabilityRadio.build());
