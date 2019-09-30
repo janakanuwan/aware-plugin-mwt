@@ -1240,6 +1240,7 @@ public class Plugin extends Aware_Plugin {
                 .addCheck("Pondering / Contemplating")
                 .addCheck("Working / Studying")
                 .addCheck("Relaxing / Sleeping")
+                .addCheck("Playing games")
                 .addCheck("Doing Nothing")
                 .addCheck("Other")
                 .setTitle("Filling activities" + scenario)
